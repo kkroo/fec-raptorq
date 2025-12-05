@@ -1,8 +1,14 @@
 #[cfg(feature = "std")]
-use std::{cmp::Ordering, mem::size_of, vec::Vec};
+use std::{cmp::Ordering, vec::Vec};
+
+#[cfg(all(feature = "std", feature = "benchmarking"))]
+use std::mem::size_of;
 
 #[cfg(not(feature = "std"))]
-use core::{cmp::Ordering, mem::size_of};
+use core::cmp::Ordering;
+
+#[cfg(all(not(feature = "std"), feature = "benchmarking"))]
+use core::mem::size_of;
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
@@ -30,6 +36,7 @@ impl SparseBinaryVec {
         self.elements.binary_search(&i)
     }
 
+    #[cfg(feature = "benchmarking")]
     pub fn size_in_bytes(&self) -> usize {
         size_of::<Self>() + size_of::<u16>() * self.elements.len()
     }

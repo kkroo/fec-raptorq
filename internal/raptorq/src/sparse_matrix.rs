@@ -1,7 +1,10 @@
 #[cfg(feature = "std")]
-use std::{mem::size_of, vec::Vec};
+use std::vec::Vec;
 
-#[cfg(not(feature = "std"))]
+#[cfg(all(feature = "std", feature = "benchmarking"))]
+use std::mem::size_of;
+
+#[cfg(all(not(feature = "std"), feature = "benchmarking"))]
 use core::mem::size_of;
 
 #[cfg(not(feature = "std"))]
@@ -253,7 +256,7 @@ impl BinaryMatrix for SparseBinaryMatrix {
         }
     }
 
-    fn get_row_iter(&self, row: usize, start_col: usize, end_col: usize) -> OctetIter {
+    fn get_row_iter(&self, row: usize, start_col: usize, end_col: usize) -> OctetIter<'_> {
         if end_col > self.width - self.num_dense_columns {
             unimplemented!(
                 "It was assumed that this wouldn't be needed, because the method would only be called on the V section of matrix A"
@@ -481,6 +484,7 @@ impl BinaryMatrix for SparseBinaryMatrix {
         self.verify();
     }
 
+    #[cfg(feature = "benchmarking")]
     fn size_in_bytes(&self) -> usize {
         let mut bytes = size_of::<Self>();
         for x in self.sparse_elements.iter() {
