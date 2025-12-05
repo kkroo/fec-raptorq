@@ -1,0 +1,6 @@
+/target/
+Cargo.lock
+*.so
+*.a
+*.dylib
+test_raptorq
