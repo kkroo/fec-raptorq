@@ -1,8 +1,14 @@
 #[cfg(feature = "std")]
-use std::{mem::size_of, ops::Range, vec::Vec};
+use std::{ops::Range, vec::Vec};
+
+#[cfg(all(feature = "std", feature = "benchmarking"))]
+use std::mem::size_of;
 
 #[cfg(not(feature = "std"))]
-use core::{mem::size_of, ops::Range, u32};
+use core::{ops::Range, u32};
+
+#[cfg(all(not(feature = "std"), feature = "benchmarking"))]
+use core::mem::size_of;
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
@@ -27,6 +33,7 @@ impl ImmutableListMap {
         &self.values[start..end]
     }
 
+    #[cfg(feature = "benchmarking")]
     pub fn size_in_bytes(&self) -> usize {
         let mut bytes = size_of::<Self>();
         bytes += size_of::<u32>() * self.offsets.len();
