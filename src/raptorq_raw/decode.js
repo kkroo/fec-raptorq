@@ -44,9 +44,20 @@ const decode_blocks = ({ binary_path }, input) => {
 
 	let buffer = [];
 
+	// Backpressure control: pause stdout when buffer grows too large
+	const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB threshold
+	const RESUME_THRESHOLD = 512 * 1024; // Resume at 512KB
+	let paused = false;
+
 	process.stdout.on('data', (chunk) => {
 		// Binary now outputs blocks with format: [SBN: 1 byte][Block Size: 4 bytes, little-endian][Block Data: variable]
 		buffer.push(...chunk);
+
+		// Backpressure: pause stdout if buffer grows too large
+		if (!paused && buffer.length >= MAX_BUFFER_SIZE) {
+			process.stdout.pause();
+			paused = true;
+		}
 
 		// Process complete blocks - we now know exact block sizes from the size header
 		while (buffer.length >= 5) { // Need at least SBN + size header
@@ -93,6 +104,12 @@ const decode_blocks = ({ binary_path }, input) => {
 
 			// Remove processed block from buffer
 			buffer.splice(0, Number(total_block_length));
+		}
+
+		// Backpressure: resume stdout when buffer drains below threshold
+		if (paused && buffer.length <= RESUME_THRESHOLD) {
+			process.stdout.resume();
+			paused = false;
 		}
 	});
 
