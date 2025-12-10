@@ -44,6 +44,11 @@ export const encode = ({ binary_path }, { options, data }) => {
 	const symbol_queue = [];
 	let iterator_waiting = false;
 
+	// Backpressure control: pause stdout when buffer grows too large
+	const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB threshold
+	const RESUME_THRESHOLD = 512 * 1024; // Resume at 512KB
+	let paused = false;
+
 	const symbols = {
 		async *[Symbol.asyncIterator]() {
 			while (true) {
@@ -95,6 +100,12 @@ export const encode = ({ binary_path }, { options, data }) => {
 				if (remaining_data.length > 0) {
 					symbol_buffer.push(...remaining_data);
 
+					// Backpressure: pause stdout if buffer grows too large
+					if (!paused && symbol_buffer.length >= MAX_BUFFER_SIZE) {
+						process.stdout.pause();
+						paused = true;
+					}
+
 					// Process complete symbols
 					while (symbol_buffer.length >= Number(encoding_symbol_size)) {
 						const symbol_data = symbol_buffer.splice(0, Number(encoding_symbol_size));
@@ -111,11 +122,23 @@ export const encode = ({ binary_path }, { options, data }) => {
 							symbol_queue.push(symbol);
 						}
 					}
+
+					// Backpressure: resume stdout when buffer drains below threshold
+					if (paused && symbol_buffer.length <= RESUME_THRESHOLD) {
+						process.stdout.resume();
+						paused = false;
+					}
 				}
 			}
 		} else {
 			// Process symbol data
 			symbol_buffer.push(...chunk);
+
+			// Backpressure: pause stdout if buffer grows too large
+			if (!paused && symbol_buffer.length >= MAX_BUFFER_SIZE) {
+				process.stdout.pause();
+				paused = true;
+			}
 
 			const encoding_symbol_size = options.symbol_size + 4n; // PayloadId size is 4 bytes per RFC 6330 and main.rs
 
@@ -134,6 +157,12 @@ export const encode = ({ binary_path }, { options, data }) => {
 				} else {
 					symbol_queue.push(symbol);
 				}
+			}
+
+			// Backpressure: resume stdout when buffer drains below threshold
+			if (paused && symbol_buffer.length <= RESUME_THRESHOLD) {
+				process.stdout.resume();
+				paused = false;
 			}
 		}
 	});
