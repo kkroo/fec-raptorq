@@ -1,10 +1,36 @@
 //! C bindings for RaptorQ FEC encoding/decoding
 //!
 //! Provides FFI-safe interface for RFC 6330 RaptorQ.
+//!
+//! Includes both standard RaptorQ API and interleaved FEC API for reduced latency.
 
 use std::ptr;
 use std::slice;
 use raptorq::{Encoder, Decoder, ObjectTransmissionInformation, EncodingPacket};
+
+// Interleaved FEC module
+pub mod interleave;
+
+// Re-export interleaved API
+pub use interleave::{
+    InterleavedEncoder,
+    InterleavedDecoder,
+    RaptorQInterleavedEncoderC,
+    RaptorQInterleavedDecoderC,
+    RaptorQBlockStatus,
+    raptorq_interleaved_encoder_new,
+    raptorq_interleaved_encoder_free,
+    raptorq_interleaved_encoder_add_packet,
+    raptorq_interleaved_encoder_get_block_status,
+    raptorq_interleaved_encoder_generate_repair,
+    raptorq_interleaved_encoder_get_oti,
+    raptorq_interleaved_decoder_new,
+    raptorq_interleaved_decoder_free,
+    raptorq_interleaved_decoder_add_packet,
+    raptorq_interleaved_decoder_is_block_complete,
+    raptorq_interleaved_decoder_get_block_data,
+    raptorq_interleaved_decoder_reset_block,
+};
 
 /// Opaque encoder handle
 pub struct RaptorQEncoderC {
