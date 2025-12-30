@@ -12,7 +12,9 @@ use std::ptr;
 use std::slice;
 
 /// Maximum interleave depth
-pub const RAPTORQ_MAX_INTERLEAVE_DEPTH: usize = 8;
+/// Higher depth = longer protection window against burst loss
+/// At 30fps with K=32: depth=30 gives ~1s protection, depth=60 gives ~2s
+pub const RAPTORQ_MAX_INTERLEAVE_DEPTH: usize = 64;
 
 /// Error codes matching the C API
 #[repr(C)]

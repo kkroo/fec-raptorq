@@ -23,8 +23,11 @@ extern "C" {
  * Types and Constants
  * ============================================================================ */
 
-/** Maximum interleave depth */
-#define RAPTORQ_MAX_INTERLEAVE_DEPTH 8
+/** Maximum interleave depth
+ * Higher depth = longer burst protection window
+ * At 30fps with K=32: depth=30 gives ~1s protection, depth=60 gives ~2s
+ */
+#define RAPTORQ_MAX_INTERLEAVE_DEPTH 64
 
 /** Opaque encoder handle */
 typedef struct RaptorQInterleavedEncoderC RaptorQInterleavedEncoderC;
@@ -61,7 +64,7 @@ typedef struct {
 /**
  * Create interleaved encoder
  *
- * @param depth         Interleave depth (1-8). Higher = lower latency
+ * @param depth         Interleave depth (1-64). Higher = better burst protection
  * @param k             Source symbols per block (max packets before encoding)
  * @param symbol_size   Symbol size in bytes (typically 1200-1280 for network MTU)
  * @param repair_symbols Number of repair symbols to generate per block
