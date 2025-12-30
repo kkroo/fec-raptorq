@@ -4,32 +4,22 @@
 //!
 //! Includes both standard RaptorQ API and interleaved FEC API for reduced latency.
 
+use raptorq::{Decoder, Encoder, EncodingPacket, ObjectTransmissionInformation};
 use std::ptr;
 use std::slice;
-use raptorq::{Encoder, Decoder, ObjectTransmissionInformation, EncodingPacket};
 
 // Interleaved FEC module
 pub mod interleave;
 
 // Re-export interleaved API
 pub use interleave::{
-    InterleavedEncoder,
-    InterleavedDecoder,
-    RaptorQInterleavedEncoderC,
-    RaptorQInterleavedDecoderC,
-    RaptorQBlockStatus,
-    raptorq_interleaved_encoder_new,
-    raptorq_interleaved_encoder_free,
-    raptorq_interleaved_encoder_add_packet,
-    raptorq_interleaved_encoder_get_block_status,
-    raptorq_interleaved_encoder_generate_repair,
-    raptorq_interleaved_encoder_get_oti,
-    raptorq_interleaved_decoder_new,
-    raptorq_interleaved_decoder_free,
-    raptorq_interleaved_decoder_add_packet,
-    raptorq_interleaved_decoder_is_block_complete,
-    raptorq_interleaved_decoder_get_block_data,
-    raptorq_interleaved_decoder_reset_block,
+    raptorq_interleaved_decoder_add_packet, raptorq_interleaved_decoder_free,
+    raptorq_interleaved_decoder_get_block_data, raptorq_interleaved_decoder_is_block_complete,
+    raptorq_interleaved_decoder_new, raptorq_interleaved_decoder_reset_block,
+    raptorq_interleaved_encoder_add_packet, raptorq_interleaved_encoder_free,
+    raptorq_interleaved_encoder_generate_repair, raptorq_interleaved_encoder_get_block_status,
+    raptorq_interleaved_encoder_get_oti, raptorq_interleaved_encoder_new, InterleavedDecoder,
+    InterleavedEncoder, RaptorQBlockStatus, RaptorQInterleavedDecoderC, RaptorQInterleavedEncoderC,
 };
 
 /// Opaque encoder handle
@@ -91,17 +81,14 @@ pub extern "C" fn raptorq_encoder_new(
     let config = ObjectTransmissionInformation::new(
         data_len as u64,
         symbol_size,
-        1,  // source_blocks
-        1,  // sub_blocks
-        8,  // symbol_alignment
+        1, // source_blocks
+        1, // sub_blocks
+        8, // symbol_alignment
     );
 
     let encoder = Encoder::new(data_slice, config);
 
-    let enc = Box::new(RaptorQEncoderC {
-        encoder,
-        config,
-    });
+    let enc = Box::new(RaptorQEncoderC { encoder, config });
 
     Box::into_raw(enc)
 }
@@ -110,7 +97,9 @@ pub extern "C" fn raptorq_encoder_new(
 #[no_mangle]
 pub extern "C" fn raptorq_encoder_free(encoder: *mut RaptorQEncoderC) {
     if !encoder.is_null() {
-        unsafe { drop(Box::from_raw(encoder)); }
+        unsafe {
+            drop(Box::from_raw(encoder));
+        }
     }
 }
 
@@ -203,7 +192,9 @@ pub extern "C" fn raptorq_encoder_get_source_packets(
     let block_encoders = enc.encoder.get_block_encoders();
 
     if block_encoders.is_empty() {
-        unsafe { *out_len = 0; }
+        unsafe {
+            *out_len = 0;
+        }
         return 0;
     }
 
@@ -216,7 +207,7 @@ pub extern "C" fn raptorq_encoder_get_source_packets(
 
     let max_len = unsafe { *out_len };
     if result.len() > max_len {
-        return -1;  // Buffer too small
+        return -1; // Buffer too small
     }
 
     unsafe {
@@ -254,7 +245,9 @@ pub extern "C" fn raptorq_encoder_get_repair_packets(
     let block_encoders = enc.encoder.get_block_encoders();
 
     if block_encoders.is_empty() {
-        unsafe { *out_len = 0; }
+        unsafe {
+            *out_len = 0;
+        }
         return 0;
     }
 
@@ -267,7 +260,7 @@ pub extern "C" fn raptorq_encoder_get_repair_packets(
 
     let max_len = unsafe { *out_len };
     if result.len() > max_len {
-        return -1;  // Buffer too small
+        return -1; // Buffer too small
     }
 
     unsafe {
@@ -335,7 +328,9 @@ pub extern "C" fn raptorq_decoder_new_with_params(
 #[no_mangle]
 pub extern "C" fn raptorq_decoder_free(decoder: *mut RaptorQDecoderC) {
     if !decoder.is_null() {
-        unsafe { drop(Box::from_raw(decoder)); }
+        unsafe {
+            drop(Box::from_raw(decoder));
+        }
     }
 }
 
@@ -388,7 +383,11 @@ pub extern "C" fn raptorq_decoder_is_complete(decoder: *const RaptorQDecoderC) -
         return 0;
     }
     let dec = unsafe { &*decoder };
-    if dec.is_complete { 1 } else { 0 }
+    if dec.is_complete {
+        1
+    } else {
+        0
+    }
 }
 
 /// Get transfer length
@@ -444,13 +443,13 @@ pub extern "C" fn raptorq_decoder_get_data(
     let dec = unsafe { &*decoder };
 
     if !dec.is_complete {
-        return -1;  // Decoding not complete
+        return -1; // Decoding not complete
     }
 
     match &dec.decoded_data {
         Some(data) => {
             if data.len() > max_len {
-                return -1;  // Buffer too small
+                return -1; // Buffer too small
             }
             unsafe {
                 ptr::copy_nonoverlapping(data.as_ptr(), out_data, data.len());
@@ -458,7 +457,7 @@ pub extern "C" fn raptorq_decoder_get_data(
             }
             0
         }
-        None => -1,  // No data available
+        None => -1, // No data available
     }
 }
 

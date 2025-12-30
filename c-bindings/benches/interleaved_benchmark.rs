@@ -4,7 +4,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughpu
 
 // Import from the crate itself
 extern crate raptorq_c_bindings;
-use raptorq_c_bindings::interleave::{InterleavedEncoder, InterleavedDecoder};
+use raptorq_c_bindings::interleave::{InterleavedDecoder, InterleavedEncoder};
 
 fn benchmark_encoder_add_packet(c: &mut Criterion) {
     let depth = 4;
@@ -42,7 +42,8 @@ fn benchmark_encoder_throughput(c: &mut Criterion) {
             let mut total = std::time::Duration::ZERO;
 
             for _ in 0..iters {
-                let mut encoder = InterleavedEncoder::new(depth, k, symbol_size, repair_symbols).unwrap();
+                let mut encoder =
+                    InterleavedEncoder::new(depth, k, symbol_size, repair_symbols).unwrap();
                 let data = vec![0u8; symbol_size as usize];
 
                 let start = std::time::Instant::now();
@@ -66,14 +67,17 @@ fn benchmark_generate_repair(c: &mut Criterion) {
     let repair_symbols = 4;
 
     let mut group = c.benchmark_group("generate_repair");
-    group.throughput(Throughput::Bytes((repair_symbols * symbol_size as u32) as u64));
+    group.throughput(Throughput::Bytes(
+        (repair_symbols * symbol_size as u32) as u64,
+    ));
 
     group.bench_function("depth_4_k_8_repair_4", |b| {
         b.iter_custom(|iters| {
             let mut total = std::time::Duration::ZERO;
 
             for _ in 0..iters {
-                let mut encoder = InterleavedEncoder::new(depth, k, symbol_size, repair_symbols).unwrap();
+                let mut encoder =
+                    InterleavedEncoder::new(depth, k, symbol_size, repair_symbols).unwrap();
                 let data = vec![0u8; symbol_size as usize];
 
                 // Fill all blocks
@@ -155,7 +159,8 @@ fn benchmark_full_roundtrip(c: &mut Criterion) {
             let mut total = std::time::Duration::ZERO;
 
             for _ in 0..iters {
-                let mut encoder = InterleavedEncoder::new(depth, k, symbol_size, repair_symbols).unwrap();
+                let mut encoder =
+                    InterleavedEncoder::new(depth, k, symbol_size, repair_symbols).unwrap();
                 let oti = encoder.get_oti();
                 let mut decoder = InterleavedDecoder::new(&oti, depth).unwrap();
 

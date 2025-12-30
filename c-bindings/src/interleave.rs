@@ -4,12 +4,12 @@
 //! Instead of waiting for K packets before encoding, packets are round-robin
 //! distributed across `depth` blocks, reducing first-repair-symbol latency by `depth`x.
 
+use raptorq::{
+    EncodingPacket, ObjectTransmissionInformation, PayloadId, SourceBlockDecoder,
+    SourceBlockEncoder, SourceBlockEncodingPlan,
+};
 use std::ptr;
 use std::slice;
-use raptorq::{
-    ObjectTransmissionInformation, SourceBlockEncoder, SourceBlockDecoder,
-    EncodingPacket, PayloadId, SourceBlockEncodingPlan,
-};
 
 /// Maximum interleave depth
 pub const RAPTORQ_MAX_INTERLEAVE_DEPTH: usize = 8;
@@ -123,9 +123,9 @@ impl InterleavedEncoder {
         let config = ObjectTransmissionInformation::new(
             transfer_length,
             symbol_size,
-            1,  // source_blocks (per encoder block)
-            1,  // sub_blocks
-            8,  // symbol_alignment
+            1, // source_blocks (per encoder block)
+            1, // sub_blocks
+            8, // symbol_alignment
         );
 
         let mut blocks = Vec::with_capacity(depth as usize);
@@ -169,7 +169,10 @@ impl InterleavedEncoder {
         // Pad data to symbol size if needed
         block.data.extend_from_slice(data);
         if data.len() < self.symbol_size as usize {
-            block.data.resize(block.data.len() + (self.symbol_size as usize - data.len()), 0);
+            block.data.resize(
+                block.data.len() + (self.symbol_size as usize - data.len()),
+                0,
+            );
         }
 
         block.packet_count += 1;
@@ -341,7 +344,12 @@ impl DecoderBlock {
         }
     }
 
-    fn reset(&mut self, config: &ObjectTransmissionInformation, block_length: u64, new_block_id: u32) {
+    fn reset(
+        &mut self,
+        config: &ObjectTransmissionInformation,
+        block_length: u64,
+        new_block_id: u32,
+    ) {
         self.decoder = SourceBlockDecoder::new(0, config, block_length);
         self.block_id = new_block_id;
         self.complete = false;
@@ -624,7 +632,9 @@ pub extern "C" fn raptorq_interleaved_encoder_add_packet(
 
     match encoder.add_packet(data) {
         Ok(bid) => {
-            unsafe { *block_id = bid; }
+            unsafe {
+                *block_id = bid;
+            }
             // Return block index (0 to depth-1)
             (bid as usize % encoder.depth()) as i32
         }
@@ -761,11 +771,13 @@ pub extern "C" fn raptorq_interleaved_decoder_add_packet(
 
     match decoder.add_packet(data) {
         Ok(Some(idx)) => {
-            unsafe { *block_index = idx; }
+            unsafe {
+                *block_index = idx;
+            }
             1 // Block completed
         }
         Ok(None) => 0, // More packets needed
-        Err(_) => -1, // Error
+        Err(_) => -1,  // Error
     }
 }
 
@@ -1139,7 +1151,9 @@ mod tests {
 
         // Test decoding for block 0 with some packet loss
         // Block 0 has packets at indices 0, 4, 8, 12, 16, 20, 24, 28 (every depth packets)
-        let block_0_packets: Vec<_> = all_source_data.iter().enumerate()
+        let block_0_packets: Vec<_> = all_source_data
+            .iter()
+            .enumerate()
             .filter(|(i, _)| i % (depth as usize) == 0)
             .map(|(_, d)| d.clone())
             .collect();
@@ -1171,7 +1185,10 @@ mod tests {
         assert!(result.is_ok());
 
         // Should be complete now (7 source + 1 repair = 8 = k)
-        assert!(decoder.is_block_complete(0), "Block 0 should be complete after receiving repair");
+        assert!(
+            decoder.is_block_complete(0),
+            "Block 0 should be complete after receiving repair"
+        );
 
         // Verify decoded data matches original
         let decoded = decoder.get_block_data(0).unwrap();
