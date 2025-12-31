@@ -229,7 +229,7 @@ unsafe fn fused_addassign_mul_scalar_binary_simd128(
         let bit_in_first_bits = first_bit % 16;
         let mut remaining = octets.len();
         let mut self_simd_ptr = octets.as_mut_ptr();
-        
+
         // Handle first bits to make remainder 16bit aligned
         if bit_in_first_bits > 0 {
             for (i, val) in octets.iter_mut().enumerate().take(16 - bit_in_first_bits) {
@@ -245,7 +245,7 @@ unsafe fn fused_addassign_mul_scalar_binary_simd128(
         assert_eq!(remaining % 16, 0);
 
         let scalar_simd = u8x16_splat(scalar.byte());
-        
+
         // Process the rest in 128bit chunks (16 bytes)
         for i in 0..(remaining / 16) {
             // Convert from bit packed u16 to 16xu8
@@ -255,14 +255,14 @@ unsafe fn fused_addassign_mul_scalar_binary_simd128(
                 expanded[j] = ((bits >> j) & 1) as u8;
             }
             let other_vec = v128_load(expanded.as_ptr() as *const v128);
-            
+
             // Create mask: 0xFF if bit is 1, 0x00 if bit is 0
             let zero = u8x16_splat(0);
             let other_vec = u8x16_ne(other_vec, zero);
-            
+
             // Multiply by scalar (mask with scalar)
             let product = v128_and(other_vec, scalar_simd);
-            
+
             // Add to self (XOR in GF(256))
             let self_vec = v128_load(self_simd_ptr.add(i * 16) as *const v128);
             let result = v128_xor(self_vec, product);
@@ -531,8 +531,9 @@ unsafe fn mulassign_scalar_simd128(octets: &mut [u8], scalar: &Octet) {
     unsafe {
         let low_mask = u8x16_splat(0x0F);
         let self_simd_ptr = octets.as_mut_ptr();
-        
-        let low_table = v128_load(OCTET_MUL_LOW_BITS[scalar.byte() as usize].as_ptr() as *const v128);
+
+        let low_table =
+            v128_load(OCTET_MUL_LOW_BITS[scalar.byte() as usize].as_ptr() as *const v128);
         let hi_table = v128_load(OCTET_MUL_HI_BITS[scalar.byte() as usize].as_ptr() as *const v128);
 
         for i in 0..(octets.len() / 16) {
@@ -776,8 +777,9 @@ unsafe fn fused_addassign_mul_scalar_simd128(octets: &mut [u8], other: &[u8], sc
         let low_mask = u8x16_splat(0x0F);
         let self_simd_ptr = octets.as_mut_ptr();
         let other_simd_ptr = other.as_ptr();
-        
-        let low_table = v128_load(OCTET_MUL_LOW_BITS[scalar.byte() as usize].as_ptr() as *const v128);
+
+        let low_table =
+            v128_load(OCTET_MUL_LOW_BITS[scalar.byte() as usize].as_ptr() as *const v128);
         let hi_table = v128_load(OCTET_MUL_HI_BITS[scalar.byte() as usize].as_ptr() as *const v128);
 
         for i in 0..(octets.len() / 16) {
@@ -835,7 +837,7 @@ unsafe fn add_assign_simd128(octets: &mut [u8], other: &[u8]) {
         assert_eq!(octets.len(), other.len());
         let self_simd_ptr = octets.as_mut_ptr();
         let other_simd_ptr = other.as_ptr();
-        
+
         for i in 0..(octets.len() / 16) {
             let self_vec = v128_load(self_simd_ptr.add(i * 16) as *const v128);
             let other_vec = v128_load(other_simd_ptr.add(i * 16) as *const v128);
