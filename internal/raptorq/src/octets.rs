@@ -11,6 +11,7 @@ use crate::octet::OCTET_MUL;
         target_arch = "x86_64",
         target_arch = "arm",
         target_arch = "aarch64",
+        target_arch = "wasm32",
     ),
     feature = "std"
 ))]
@@ -21,6 +22,7 @@ use crate::octet::OCTET_MUL_HI_BITS;
         target_arch = "x86_64",
         target_arch = "arm",
         target_arch = "aarch64",
+        target_arch = "wasm32",
     ),
     feature = "std"
 ))]
@@ -29,6 +31,9 @@ use crate::octet::Octet;
 
 #[cfg(all(target_arch = "aarch64", feature = "std"))]
 use std::arch::is_aarch64_feature_detected;
+
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+use std::arch::wasm32::*;
 
 // An octet vec containing only binary values, which are bit-packed for efficiency
 pub struct BinaryOctetVec {
@@ -108,6 +113,12 @@ pub fn fused_addassign_mul_scalar_binary(
             unsafe {
                 return fused_addassign_mul_scalar_binary_neon(octets, other, scalar);
             }
+        }
+    }
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    {
+        unsafe {
+            return fused_addassign_mul_scalar_binary_simd128(octets, other, scalar);
         }
     }
     #[cfg(all(target_arch = "arm", feature = "std"))]
@@ -197,6 +208,65 @@ unsafe fn fused_addassign_mul_scalar_binary_neon(
             let self_vec = vld1q_u8(self_neon_ptr.add(i * mem::size_of::<uint8x16_t>()));
             let result = veorq_u8(self_vec, product);
             store_neon((self_neon_ptr as *mut uint8x16_t).add(i), result);
+        }
+    }
+}
+
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+unsafe fn fused_addassign_mul_scalar_binary_simd128(
+    octets: &mut [u8],
+    other: &BinaryOctetVec,
+    scalar: &Octet,
+) {
+    unsafe {
+        let first_bit = other.padding_bits();
+        let other_u16 = std::slice::from_raw_parts(
+            other.elements.as_ptr() as *const u16,
+            other.elements.len() * 4,
+        );
+        let mut other_batch_start_index = first_bit / 16;
+        let first_bits = other_u16[other_batch_start_index];
+        let bit_in_first_bits = first_bit % 16;
+        let mut remaining = octets.len();
+        let mut self_simd_ptr = octets.as_mut_ptr();
+        
+        // Handle first bits to make remainder 16bit aligned
+        if bit_in_first_bits > 0 {
+            for (i, val) in octets.iter_mut().enumerate().take(16 - bit_in_first_bits) {
+                let selected_bit = first_bits & (0x1 << (bit_in_first_bits + i));
+                let other_byte = u8::from(selected_bit != 0);
+                *val ^= scalar.byte() * other_byte;
+            }
+            remaining -= 16 - bit_in_first_bits;
+            other_batch_start_index += 1;
+            self_simd_ptr = self_simd_ptr.add(16 - bit_in_first_bits);
+        }
+
+        assert_eq!(remaining % 16, 0);
+
+        let scalar_simd = u8x16_splat(scalar.byte());
+        
+        // Process the rest in 128bit chunks (16 bytes)
+        for i in 0..(remaining / 16) {
+            // Convert from bit packed u16 to 16xu8
+            let bits = other_u16[other_batch_start_index + i];
+            let mut expanded = [0u8; 16];
+            for j in 0..16 {
+                expanded[j] = ((bits >> j) & 1) as u8;
+            }
+            let other_vec = v128_load(expanded.as_ptr() as *const v128);
+            
+            // Create mask: 0xFF if bit is 1, 0x00 if bit is 0
+            let zero = u8x16_splat(0);
+            let other_vec = u8x16_ne(other_vec, zero);
+            
+            // Multiply by scalar (mask with scalar)
+            let product = v128_and(other_vec, scalar_simd);
+            
+            // Add to self (XOR in GF(256))
+            let self_vec = v128_load(self_simd_ptr.add(i * 16) as *const v128);
+            let result = v128_xor(self_vec, product);
+            v128_store(self_simd_ptr.add(i * 16) as *mut v128, result);
         }
     }
 }
@@ -446,8 +516,44 @@ pub fn mulassign_scalar(octets: &mut [u8], scalar: &Octet) {
         //     }
         // }
     }
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    {
+        unsafe {
+            return mulassign_scalar_simd128(octets, scalar);
+        }
+    }
 
     return mulassign_scalar_fallback(octets, scalar);
+}
+
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+unsafe fn mulassign_scalar_simd128(octets: &mut [u8], scalar: &Octet) {
+    unsafe {
+        let low_mask = u8x16_splat(0x0F);
+        let self_simd_ptr = octets.as_mut_ptr();
+        
+        let low_table = v128_load(OCTET_MUL_LOW_BITS[scalar.byte() as usize].as_ptr() as *const v128);
+        let hi_table = v128_load(OCTET_MUL_HI_BITS[scalar.byte() as usize].as_ptr() as *const v128);
+
+        for i in 0..(octets.len() / 16) {
+            let self_vec = v128_load(self_simd_ptr.add(i * 16) as *const v128);
+            let low = v128_and(self_vec, low_mask);
+            let low_result = u8x16_swizzle(low_table, low);
+            let hi = u8x16_shr(self_vec, 4);
+            let hi = v128_and(hi, low_mask);
+            let hi_result = u8x16_swizzle(hi_table, hi);
+            let result = v128_xor(hi_result, low_result);
+            v128_store(self_simd_ptr.add(i * 16) as *mut v128, result);
+        }
+
+        let remainder = octets.len() % 16;
+        let scalar_index = scalar.byte() as usize;
+        for i in (octets.len() - remainder)..octets.len() {
+            *octets.get_unchecked_mut(i) = *OCTET_MUL
+                .get_unchecked(scalar_index)
+                .get_unchecked(*octets.get_unchecked(i) as usize);
+        }
+    }
 }
 
 fn fused_addassign_mul_scalar_fallback(octets: &mut [u8], other: &[u8], scalar: &Octet) {
@@ -654,8 +760,50 @@ pub fn fused_addassign_mul_scalar(octets: &mut [u8], other: &[u8], scalar: &Octe
         //     }
         // }
     }
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    {
+        unsafe {
+            return fused_addassign_mul_scalar_simd128(octets, other, scalar);
+        }
+    }
 
     return fused_addassign_mul_scalar_fallback(octets, other, scalar);
+}
+
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+unsafe fn fused_addassign_mul_scalar_simd128(octets: &mut [u8], other: &[u8], scalar: &Octet) {
+    unsafe {
+        let low_mask = u8x16_splat(0x0F);
+        let self_simd_ptr = octets.as_mut_ptr();
+        let other_simd_ptr = other.as_ptr();
+        
+        let low_table = v128_load(OCTET_MUL_LOW_BITS[scalar.byte() as usize].as_ptr() as *const v128);
+        let hi_table = v128_load(OCTET_MUL_HI_BITS[scalar.byte() as usize].as_ptr() as *const v128);
+
+        for i in 0..(octets.len() / 16) {
+            // Multiply by scalar
+            let other_vec = v128_load(other_simd_ptr.add(i * 16) as *const v128);
+            let low = v128_and(other_vec, low_mask);
+            let low_result = u8x16_swizzle(low_table, low);
+            let hi = u8x16_shr(other_vec, 4);
+            let hi = v128_and(hi, low_mask);
+            let hi_result = u8x16_swizzle(hi_table, hi);
+            let other_vec = v128_xor(hi_result, low_result);
+
+            // Add to self (XOR in GF(256))
+            let self_vec = v128_load(self_simd_ptr.add(i * 16) as *const v128);
+            let result = v128_xor(self_vec, other_vec);
+            v128_store(self_simd_ptr.add(i * 16) as *mut v128, result);
+        }
+
+        let remainder = octets.len() % 16;
+        let scalar_index = scalar.byte() as usize;
+        for i in (octets.len() - remainder)..octets.len() {
+            *octets.get_unchecked_mut(i) ^= *OCTET_MUL
+                .get_unchecked(scalar_index)
+                .get_unchecked(*other.get_unchecked(i) as usize);
+        }
+    }
 }
 
 fn add_assign_fallback(octets: &mut [u8], other: &[u8]) {
@@ -676,6 +824,37 @@ fn add_assign_fallback(octets: &mut [u8], other: &[u8]) {
     let remainder = octets.len() % 8;
     for i in (octets.len() - remainder)..octets.len() {
         unsafe {
+            *octets.get_unchecked_mut(i) ^= other.get_unchecked(i);
+        }
+    }
+}
+
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+unsafe fn add_assign_simd128(octets: &mut [u8], other: &[u8]) {
+    unsafe {
+        assert_eq!(octets.len(), other.len());
+        let self_simd_ptr = octets.as_mut_ptr();
+        let other_simd_ptr = other.as_ptr();
+        
+        for i in 0..(octets.len() / 16) {
+            let self_vec = v128_load(self_simd_ptr.add(i * 16) as *const v128);
+            let other_vec = v128_load(other_simd_ptr.add(i * 16) as *const v128);
+            let result = v128_xor(self_vec, other_vec);
+            v128_store(self_simd_ptr.add(i * 16) as *mut v128, result);
+        }
+
+        let remainder = octets.len() % 16;
+        let self_ptr = octets.as_mut_ptr();
+        let other_ptr = other.as_ptr();
+        for i in ((octets.len() - remainder) / 8)..(octets.len() / 8) {
+            let self_value = (self_ptr as *mut u64).add(i).read_unaligned();
+            let other_value = (other_ptr as *mut u64).add(i).read_unaligned();
+            let result = self_value ^ other_value;
+            (self_ptr as *mut u64).add(i).write_unaligned(result);
+        }
+
+        let remainder = octets.len() % 8;
+        for i in (octets.len() - remainder)..octets.len() {
             *octets.get_unchecked_mut(i) ^= other.get_unchecked(i);
         }
     }
@@ -864,6 +1043,12 @@ pub fn add_assign(octets: &mut [u8], other: &[u8]) {
         //         return add_assign_neon(octets, other);
         //     }
         // }
+    }
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    {
+        unsafe {
+            return add_assign_simd128(octets, other);
+        }
     }
     return add_assign_fallback(octets, other);
 }

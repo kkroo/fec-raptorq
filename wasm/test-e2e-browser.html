@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RaptorQ WASM SIMD - E2E Test (Browser)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .test-section-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .test-section-header h3 {
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .test-section-body {
+            padding: 20px;
+        }
+        
+        .test-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .test-item.pending {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+        
+        .test-item.running {
+            background: #fff3cd;
+            color: #856404;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .test-item.passed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .test-item.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .test-name {
+            font-weight: 500;
+        }
+        
+        .test-details {
+            font-size: 13px;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+        
+        .test-icon {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-badge.info { background: #d1ecf1; color: #0c5460; }
+        .status-badge.success { background: #d4edda; color: #155724; }
+        .status-badge.warning { background: #fff3cd; color: #856404; }
+        .status-badge.danger { background: #f8d7da; color: #721c24; }
+        
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .summary {
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .summary-stat {
+            display: inline-block;
+            margin: 0 20px;
+        }
+        
+        .summary-stat .value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .summary-stat .label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            line-height: 1.5;
+        }
+        
+        .log-timestamp {
+            color: #858585;
+            margin-right: 10px;
+        }
+        
+        .log-info { color: #4fc3f7; }
+        .log-success { color: #81c784; }
+        .log-warning { color: #ffb74d; }
+        .log-error { color: #e57373; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 RaptorQ WASM SIMD128</h1>
+            <p>End-to-End Test Suite</p>
+        </div>
+        
+        <div class="content">
+            <!-- SIMD Support Check -->
+            <div class="test-section">
+                <div class="test-section-header">
+                    <h3>System Check</h3>
+                    <span id="system-status" class="status-badge info">Checking...</span>
+                </div>
+                <div class="test-section-body">
+                    <div id="simd-check" class="test-item pending">
+                        <div>
+                            <span class="test-icon">⏳</span>
+                            <span class="test-name">WASM SIMD128 Support</span>
+                            <div class="test-details">Checking browser capabilities...</div>
+                        </div>
+                    </div>
+                    <div id="wasm-load" class="test-item pending">
+                        <div>
+                            <span class="test-icon">⏳</span>
+                            <span class="test-name">WASM Module Load</span>
+                            <div class="test-details">Loading RaptorQ module...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Test Controls -->
+            <div class="controls">
+                <button id="run-tests-btn" onclick="runAllTests()" disabled>Run All Tests</button>
+            </div>
+            
+            <!-- Test Results -->
+            <div class="test-section">
+                <div class="test-section-header">
+                    <h3>Test Results</h3>
+                    <span id="test-status" class="status-badge info">Not Started</span>
+                </div>
+                <div class="test-section-body" id="test-results">
+                    <div class="test-item pending">
+                        <div>
+                            <span class="test-icon">⏳</span>
+                            <span class="test-name">Click "Run All Tests" to begin</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary -->
+            <div class="summary" id="summary" style="display: none;">
+                <div class="summary-stat">
+                    <div class="value" id="passed-count">0</div>
+                    <div class="label">Passed</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="value" id="failed-count">0</div>
+                    <div class="label">Failed</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="value" id="total-time">0</div>
+                    <div class="label">Time (ms)</div>
+                </div>
+            </div>
+            
+            <!-- Log -->
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        let wasm = null;
+        let testsPassed = 0;
+        let testsFailed = 0;
+        let startTime = 0;
+        
+        // Logging
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span>${message}`;
+            
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Update test item
+        function updateTest(id, status, details = '') {
+            const item = document.getElementById(id);
+            if (!item) return;
+            
+            item.className = `test-item ${status}`;
+            
+            const icons = {
+                pending: '⏳',
+                running: '⏳',
+                passed: '✅',
+                failed: '❌'
+            };
+            
+            const icon = item.querySelector('.test-icon');
+            if (icon) icon.textContent = icons[status] || '⏳';
+            
+            if (details) {
+                let detailsDiv = item.querySelector('.test-details');
+                if (!detailsDiv) {
+                    detailsDiv = document.createElement('div');
+                    detailsDiv.className = 'test-details';
+                    item.querySelector('div').appendChild(detailsDiv);
+                }
+                detailsDiv.textContent = details;
+            }
+        }
+        
+        // Check SIMD support
+        function checkSIMDSupport() {
+            try {
+                const simdTest = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11]);
+                const supported = WebAssembly.validate(simdTest);
+                
+                updateTest('simd-check', supported ? 'passed' : 'failed', 
+                    supported ? 'SIMD128 is supported' : 'SIMD128 not supported (will use scalar)');
+                log(`SIMD128 Support: ${supported ? 'YES' : 'NO'}`, supported ? 'success' : 'warning');
+                
+                return supported;
+            } catch (e) {
+                updateTest('simd-check', 'failed', 'Error checking SIMD support');
+                log(`Error checking SIMD: ${e.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Load WASM module
+        async function loadWASM() {
+            try {
+                updateTest('wasm-load', 'running');
+                log('Loading WASM module...', 'info');
+                
+                const wasmModule = await import('./pkg/raptorq_wasm.js');
+                await wasmModule.default();
+                wasm = wasmModule;
+                
+                updateTest('wasm-load', 'passed', 'Module loaded successfully');
+                log('WASM module loaded', 'success');
+                
+                document.getElementById('system-status').textContent = 'Ready';
+                document.getElementById('system-status').className = 'status-badge success';
+                document.getElementById('run-tests-btn').disabled = false;
+                
+                return true;
+            } catch (e) {
+                updateTest('wasm-load', 'failed', `Failed: ${e.message}`);
+                log(`Failed to load WASM: ${e.message}`, 'error');
+                document.getElementById('system-status').textContent = 'Error';
+                document.getElementById('system-status').className = 'status-badge danger';
+                return false;
+            }
+        }
+        
+        // Test functions
+        async function test1_BasicEncodeDecode() {
+            log('Test 1: Basic Encode/Decode', 'info');
+            
+            try {
+                const data = new Uint8Array(10000);
+                for (let i = 0; i < data.length; i++) {
+                    data[i] = i % 256;
+                }
+                
+                const encoder = new wasm.RaptorQEncoder(data, 1280, 4, 1, 1, 8);
+                const oti = encoder.get_oti();
+                const packets = encoder.get_all_packets();
+                const packetSize = encoder.packet_size();
+                
+                const decoder = new wasm.RaptorQDecoder(oti);
+                
+                for (let i = 0; i < packets.length / packetSize; i++) {
+                    const offset = i * packetSize;
+                    const packet = packets.slice(offset, offset + packetSize);
+                    const complete = decoder.add_packet(packet);
+                    if (complete) break;
+                }
+                
+                const decoded = decoder.get_result();
+                
+                let matches = decoded.length === data.length;
+                if (matches) {
+                    for (let i = 0; i < data.length; i++) {
+                        if (data[i] !== decoded[i]) {
+                            matches = false;
+                            break;
+                        }
+                    }
+                }
+                
+                if (matches) {
+                    testsPassed++;
+                    log('✅ Basic encode/decode passed', 'success');
+                    return { passed: true, details: `${data.length} bytes verified` };
+                } else {
+                    testsFailed++;
+                    log('❌ Data mismatch', 'error');
+                    return { passed: false, details: 'Data integrity check failed' };
+                }
+            } catch (e) {
+                testsFailed++;
+                log(`❌ Error: ${e.message}`, 'error');
+                return { passed: false, details: e.message };
+            }
+        }
+        
+        async function test2_FECRecovery() {
+            log('Test 2: FEC Recovery (20% loss)', 'info');
+            
+            try {
+                const data = new Uint8Array(12800);
+                for (let i = 0; i < data.length; i++) {
+                    data[i] = (i * 137 + 42) % 256;
+                }
+                
+                const encoder = new wasm.RaptorQEncoder(data, 1280, 6, 1, 1, 8);
+                const oti = encoder.get_oti();
+                const packets = encoder.get_all_packets();
+                const packetSize = encoder.packet_size();
+                const totalPackets = packets.length / packetSize;
+                
+                const decoder = new wasm.RaptorQDecoder(oti);
+                let lost = 0, received = 0;
+                
+                for (let i = 0; i < totalPackets; i++) {
+                    if (Math.random() < 0.20) {
+                        lost++;
+                        continue;
+                    }
+                    
+                    const offset = i * packetSize;
+                    const packet = packets.slice(offset, offset + packetSize);
+                    decoder.add_packet(packet);
+                    received++;
+                    
+                    if (decoder.is_complete()) break;
+                }
+                
+                if (decoder.is_complete()) {
+                    const decoded = decoder.get_result();
+                    let matches = decoded.length === data.length;
+                    
+                    if (matches) {
+                        for (let i = 0; i < data.length; i++) {
+                            if (data[i] !== decoded[i]) {
+                                matches = false;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (matches) {
+                        testsPassed++;
+                        log(`✅ FEC recovery passed (lost ${lost}, received ${received})`, 'success');
+                        return { passed: true, details: `Lost: ${lost}, Received: ${received}` };
+                    }
+                }
+                
+                testsFailed++;
+                log('❌ FEC recovery failed', 'error');
+                return { passed: false, details: 'Recovery failed' };
+            } catch (e) {
+                testsFailed++;
+                log(`❌ Error: ${e.message}`, 'error');
+                return { passed: false, details: e.message };
+            }
+        }
+        
+        async function test3_Performance() {
+            log('Test 3: Performance Benchmark', 'info');
+            
+            try {
+                const iterations = 20;
+                const data = new Uint8Array(10000);
+                
+                // Encode benchmark
+                const encodeStart = performance.now();
+                let lastEncoder;
+                for (let i = 0; i < iterations; i++) {
+                    lastEncoder = new wasm.RaptorQEncoder(data, 1280, 4, 1, 1, 8);
+                    lastEncoder.get_all_packets();
+                }
+                const encodeTime = (performance.now() - encodeStart) / iterations;
+                const encodeThroughput = (data.length / encodeTime / 1024).toFixed(2);
+                
+                log(`  Encode: ${encodeTime.toFixed(2)} ms/op (${encodeThroughput} MB/s)`, 'info');
+                
+                // Decode benchmark
+                const oti = lastEncoder.get_oti();
+                const packets = lastEncoder.get_all_packets();
+                const packetSize = lastEncoder.packet_size();
+                
+                const decodeStart = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    const decoder = new wasm.RaptorQDecoder(oti);
+                    for (let j = 0; j < packets.length / packetSize; j++) {
+                        const offset = j * packetSize;
+                        const packet = packets.slice(offset, offset + packetSize);
+                        if (decoder.add_packet(packet)) break;
+                    }
+                    decoder.get_result();
+                }
+                const decodeTime = (performance.now() - decodeStart) / iterations;
+                const decodeThroughput = (data.length / decodeTime / 1024).toFixed(2);
+                
+                log(`  Decode: ${decodeTime.toFixed(2)} ms/op (${decodeThroughput} MB/s)`, 'info');
+                
+                testsPassed++;
+                log('✅ Performance test passed', 'success');
+                return { passed: true, details: `Enc: ${encodeThroughput} MB/s, Dec: ${decodeThroughput} MB/s` };
+            } catch (e) {
+                testsFailed++;
+                log(`❌ Error: ${e.message}`, 'error');
+                return { passed: false, details: e.message };
+            }
+        }
+        
+        // Run all tests
+        window.runAllTests = async function() {
+            document.getElementById('run-tests-btn').disabled = true;
+            document.getElementById('test-status').textContent = 'Running';
+            document.getElementById('test-status').className = 'status-badge warning';
+            
+            testsPassed = 0;
+            testsFailed = 0;
+            startTime = performance.now();
+            
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '';
+            
+            const tests = [
+                { id: 'test1', name: 'Basic Encode/Decode', fn: test1_BasicEncodeDecode },
+                { id: 'test2', name: 'FEC Recovery (20% loss)', fn: test2_FECRecovery },
+                { id: 'test3', name: 'Performance Benchmark', fn: test3_Performance }
+            ];
+            
+            for (const test of tests) {
+                const testDiv = document.createElement('div');
+                testDiv.id = test.id;
+                testDiv.className = 'test-item running';
+                testDiv.innerHTML = `
+                    <div>
+                        <span class="test-icon">⏳</span>
+                        <span class="test-name">${test.name}</span>
+                        <div class="test-details">Running...</div>
+                    </div>
+                `;
+                resultsDiv.appendChild(testDiv);
+                
+                const result = await test.fn();
+                updateTest(test.id, result.passed ? 'passed' : 'failed', result.details);
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            const totalTime = (performance.now() - startTime).toFixed(0);
+            
+            document.getElementById('passed-count').textContent = testsPassed;
+            document.getElementById('failed-count').textContent = testsFailed;
+            document.getElementById('total-time').textContent = totalTime;
+            document.getElementById('summary').style.display = 'block';
+            
+            if (testsFailed === 0) {
+                document.getElementById('test-status').textContent = 'All Passed';
+                document.getElementById('test-status').className = 'status-badge success';
+                log('🎉 All tests passed!', 'success');
+            } else {
+                document.getElementById('test-status').textContent = 'Some Failed';
+                document.getElementById('test-status').className = 'status-badge danger';
+                log(`⚠️ ${testsFailed} test(s) failed`, 'error');
+            }
+            
+            document.getElementById('run-tests-btn').disabled = false;
+        };
+        
+        // Initialize
+        (async () => {
+            log('Initializing test suite...', 'info');
+            log(`Browser: ${navigator.userAgent}`, 'info');
+            
+            const simdSupported = checkSIMDSupport();
+            await loadWASM();
+        })();
+    </script>
+</body>
+</html>
+
