@@ -1,6 +1,5 @@
-import { user_error } from "./error.js";
+import { internal_error, user_error } from "./error.js";
 import { unsuspended_factory } from "./unsuspended_factory.js";
-import { internal_error } from "./error.js";
 
 /**
  * @deprecated
@@ -9,7 +8,7 @@ import { internal_error } from "./error.js";
 export const create_func_factory = (cls) => {
 	return unsuspended_factory(async (...args) => {
 		const obj = new cls(...args);
-		obj._init && await obj._init();
+		obj._init && (await obj._init());
 
 		const origin = Symbol("origin");
 
@@ -18,13 +17,13 @@ export const create_func_factory = (cls) => {
 			error._origin = origin;
 		};
 
-		const keys = Object.keys(obj).filter(key => typeof obj[key] === "function" && !key.startsWith("_"));
+		const keys = Object.keys(obj).filter((key) => typeof obj[key] === "function" && !key.startsWith("_"));
 
 		if (keys.length !== 1) {
 			throw new Error(`Expected exactly one public method in a determinstic interface, but got ${keys.length}.`);
 		}
 
-		for (let key of Object.keys(obj)) {
+		for (const key of Object.keys(obj)) {
 			if (key.startsWith("_")) {
 				continue;
 			}

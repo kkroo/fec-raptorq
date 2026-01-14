@@ -1,12 +1,12 @@
 /**
  * Switches over a uoe-enum instance using the provided cases.
- * 
+ *
  * Must be exhaustive, an error is thrown if an unspecified case is encountered.
- * 
+ *
  * @example
- * 
+ *
  * const state = enm.partially_eligible({ reason: "too young" });
- * 
+ *
  * console.log(switch_enum(state, {
  *   eligible: () => "awesome",
  *   partially_eligible: (info) => `decent but ${info.reason}`,

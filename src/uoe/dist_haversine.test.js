@@ -1,6 +1,6 @@
-import { test } from "./test.js";
 import { compare_floats } from "./compare_floats.js";
 import { dist_haversine } from "./dist_haversine.js";
+import { test } from "./test.js";
 
 test("null island", () => {
 	return dist_haversine({ latitude: 0, longitude: 0 }, { latitude: 0, longitude: 0 }) === 0;
@@ -21,6 +21,9 @@ test("if Australia was on the equator", () => {
 		return I;
 	})().every((not_australia) => {
 		const australia = not_australia + 180;
-		return compare_floats(dist_haversine({ latitude: 0, longitude: australia }, { latitude: 0, longitude: not_australia }), Math.PI);
+		return compare_floats(
+			dist_haversine({ latitude: 0, longitude: australia }, { latitude: 0, longitude: not_australia }),
+			Math.PI,
+		);
 	});
 });

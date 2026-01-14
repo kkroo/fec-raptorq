@@ -1,14 +1,14 @@
-import { throw_error } from "../uoe/throw_error.js";
-import { error_user_payload } from "../uoe/error_user_payload.js";
 import { exact_options } from "../raptorq_raw/exact_options.js";
+import { oti_decode as oti_decode_raw } from "../raptorq_raw/oti_decode.js";
 import Uint1Array from "../Uint1Array.js";
 import { bigint_ceil } from "../uoe/bigint_ceil.js";
-import { oti_encode } from "./oti_encode.js";
-import { oti_decode as oti_decode_raw } from "../raptorq_raw/oti_decode.js";
+import { error_user_payload } from "../uoe/error_user_payload.js";
+import { throw_error } from "../uoe/throw_error.js";
+import { calculate_ecc } from "./calculate_ecc.js";
 import { exact_strategy } from "./exact_strategy.js";
+import { oti_encode } from "./oti_encode.js";
 import { packet_header_encode } from "./packet_header_encode.js";
 import { packet_miniheader_encode } from "./packet_miniheader_encode.js";
-import { calculate_ecc } from "./calculate_ecc.js";
 
 // Safe wrapper functions that validate transformations
 const safe_max_value = (bits) => {
@@ -23,12 +23,12 @@ const create_safe_wrappers = (remap, external_bits, max_internal_bits) => {
 	const to_internal_safe = (external_value) => {
 		const internal_value = remap.to_internal(external_value);
 
-		if (false
-			|| typeof internal_value !== "bigint"
-			|| internal_value < 0n
-			|| internal_value > max_internal_value
-		) {
-			throw_error(error_user_payload(`to_internal returned invalid value ${internal_value}. Must be bigint between 0n and ${max_internal_value}.`));
+		if (false || typeof internal_value !== "bigint" || internal_value < 0n || internal_value > max_internal_value) {
+			throw_error(
+				error_user_payload(
+					`to_internal returned invalid value ${internal_value}. Must be bigint between 0n and ${max_internal_value}.`,
+				),
+			);
 		}
 
 		// Double-check round-trip consistency (only if external_bits > 0n)
@@ -36,11 +36,19 @@ const create_safe_wrappers = (remap, external_bits, max_internal_bits) => {
 			const round_trip_external = remap.to_external(internal_value);
 
 			if (round_trip_external === undefined) {
-				throw_error(error_user_payload(`Internal value ${internal_value} cannot be represented externally (to_external returned undefined).`));
+				throw_error(
+					error_user_payload(
+						`Internal value ${internal_value} cannot be represented externally (to_external returned undefined).`,
+					),
+				);
 			}
 
 			if (round_trip_external !== external_value) {
-				throw_error(error_user_payload(`to_internal/to_external are not consistent. ${external_value} -> ${internal_value} -> ${round_trip_external}`));
+				throw_error(
+					error_user_payload(
+						`to_internal/to_external are not consistent. ${external_value} -> ${internal_value} -> ${round_trip_external}`,
+					),
+				);
 			}
 		}
 
@@ -56,21 +64,29 @@ const create_safe_wrappers = (remap, external_bits, max_internal_bits) => {
 
 		// Allow to_external to return undefined to indicate non-representable values
 		if (external_value === undefined) {
-			throw_error(error_user_payload(`Internal value ${internal_value} cannot be represented externally (to_external returned undefined).`));
+			throw_error(
+				error_user_payload(
+					`Internal value ${internal_value} cannot be represented externally (to_external returned undefined).`,
+				),
+			);
 		}
 
-		if (false
-			|| typeof external_value !== "bigint"
-			|| external_value < 0n
-			|| external_value > max_external_value
-		) {
-			throw_error(error_user_payload(`to_external returned invalid value ${external_value}. Must be bigint between 0n and ${max_external_value}.`));
+		if (false || typeof external_value !== "bigint" || external_value < 0n || external_value > max_external_value) {
+			throw_error(
+				error_user_payload(
+					`to_external returned invalid value ${external_value}. Must be bigint between 0n and ${max_external_value}.`,
+				),
+			);
 		}
 
 		// Double-check round-trip consistency
 		const round_trip_internal = remap.to_internal(external_value);
 		if (round_trip_internal !== internal_value) {
-			throw_error(error_user_payload(`to_internal/to_external are not consistent. ${internal_value} -> ${external_value} -> ${round_trip_internal}`));
+			throw_error(
+				error_user_payload(
+					`to_internal/to_external are not consistent. ${internal_value} -> ${external_value} -> ${round_trip_internal}`,
+				),
+			);
 		}
 
 		return external_value;
@@ -84,10 +100,18 @@ export const encode__ = ({ raptorq_raw }, { options, data, strategy }) => {
 	strategy = exact_strategy(strategy);
 
 	// Create safe wrappers for SBN (8 bits is the default max for internal SBN)
-	const sbn_wrappers = create_safe_wrappers(strategy.encoding_packet.sbn.remap, strategy.encoding_packet.sbn.external_bits, 8n);
+	const sbn_wrappers = create_safe_wrappers(
+		strategy.encoding_packet.sbn.remap,
+		strategy.encoding_packet.sbn.external_bits,
+		8n,
+	);
 
 	// Create safe wrappers for ESI (24 bits is the default max for internal ESI)
-	const esi_wrappers = create_safe_wrappers(strategy.encoding_packet.esi.remap, strategy.encoding_packet.esi.external_bits, 24n);
+	const esi_wrappers = create_safe_wrappers(
+		strategy.encoding_packet.esi.remap,
+		strategy.encoding_packet.esi.external_bits,
+		24n,
+	);
 
 	// Validate encoding options against safe wrappers (test the transformations)
 	options ??= {};
@@ -98,7 +122,11 @@ export const encode__ = ({ raptorq_raw }, { options, data, strategy }) => {
 		try {
 			sbn_wrappers.to_external_safe(test_sbn);
 		} catch (e) {
-			throw_error(error_user_payload(`Provided options.num_source_blocks ${options.num_source_blocks} cannot be represented with current SBN strategy: ${e.message}`));
+			throw_error(
+				error_user_payload(
+					`Provided options.num_source_blocks ${options.num_source_blocks} cannot be represented with current SBN strategy: ${e.message}`,
+				),
+			);
 		}
 	}
 
@@ -123,7 +151,11 @@ export const encode__ = ({ raptorq_raw }, { options, data, strategy }) => {
 		try {
 			esi_wrappers.to_external_safe(estimated_total_symbols - 1n); // ESI is 0-indexed
 		} catch (e) {
-			throw_error(error_user_payload(`Estimated symbol count ${estimated_total_symbols} cannot be represented with current ESI strategy: ${e.message}`));
+			throw_error(
+				error_user_payload(
+					`Estimated symbol count ${estimated_total_symbols} cannot be represented with current ESI strategy: ${e.message}`,
+				),
+			);
 		}
 
 		// Get OTI for per-packet placement if needed
@@ -179,7 +211,6 @@ export const encode__ = ({ raptorq_raw }, { options, data, strategy }) => {
 	};
 };
 
-
 export const encode = ({ raptorq_raw }, { options, data, strategy }) => {
 	strategy ??= {};
 
@@ -194,7 +225,8 @@ export const encode = ({ raptorq_raw }, { options, data, strategy }) => {
 		// Use exact_strategy to handle all defaults and validation
 		strategy = exact_strategy(strategy);
 
-		strategy.payload.transfer_length_trim.pump_transfer_length ??= (effective_transfer_length) => effective_transfer_length;
+		strategy.payload.transfer_length_trim.pump_transfer_length ??= (effective_transfer_length) =>
+			effective_transfer_length;
 
 		const external_bytes = Number(bigint_ceil(strategy.payload.transfer_length_trim.external_bits, 8n));
 
@@ -210,7 +242,10 @@ export const encode = ({ raptorq_raw }, { options, data, strategy }) => {
 			return orig_transfer_length_to_external(internal);
 		};
 
-		const prefix = new Uint1Array(BigInt(data.length), Number(strategy.payload.transfer_length_trim.external_bits)).to_uint8_array();
+		const prefix = new Uint1Array(
+			BigInt(data.length),
+			Number(strategy.payload.transfer_length_trim.external_bits),
+		).to_uint8_array();
 
 		if (external_bytes !== prefix.length) {
 			throw new Error("assertion failed.");
@@ -223,12 +258,17 @@ export const encode = ({ raptorq_raw }, { options, data, strategy }) => {
 
 		console.log("effective transfer length", effective_transfer_length);
 
-		const desired_effective_transfer_length = strategy.payload.transfer_length_trim.pump_transfer_length(effective_transfer_length);
+		const desired_effective_transfer_length =
+			strategy.payload.transfer_length_trim.pump_transfer_length(effective_transfer_length);
 
 		console.log("pumped length", desired_effective_transfer_length);
 
 		if (desired_effective_transfer_length < effective_transfer_length) {
-			throw_error(error_user_payload(`strategy.payload.transfer_length_trim.pump_transfer_length most return value >= original.`));
+			throw_error(
+				error_user_payload(
+					`strategy.payload.transfer_length_trim.pump_transfer_length most return value >= original.`,
+				),
+			);
 		}
 
 		const new_data = new Uint8Array(Number(desired_effective_transfer_length));

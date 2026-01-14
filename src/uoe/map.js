@@ -1,16 +1,13 @@
 import { enm } from "./enm.js";
-import { is_enum } from "./is_enum.js";
 import { is_api } from "./is_api.js";
+import { is_enum } from "./is_enum.js";
 import { named_function } from "./named_function.js";
 import { unsuspended_promise } from "./unsuspended_promise.js";
 
 const symbol_is_map = Symbol("is_map");
 
 export const _is_map = (obj) => {
-	return (true
-		&& typeof obj === "function"
-		&& obj[symbol_is_map] === true
-	);
+	return true && typeof obj === "function" && obj[symbol_is_map] === true;
 };
 
 const nil = Symbol("nil");
@@ -29,19 +26,19 @@ const cached = (func) => {
 
 /**
  * @stability 2 - provisional
- * 
+ *
  * A map is the uoe standard for a determinstic function.
- * 
+ *
  * A map has only one input argument, so you may like to pass in a tuple or other data type if you need more complex input.
- * 
+ *
  * A map must obey Map Enum Equivalence (MEE):
- * 
+ *
  *  - Calling a map with an enum containing data is equivalent to first calling the map with just the symbol of the enum, and subsequently calling the result with just the data of the enum. In other words `map(: :sym(input))` must be equivalent to `(: map:sym)(: input)` for all sym,input.
- * 
+ *
  * Accessing a property on a map (`map.foo`) is syntactic sugar for calling the map with the respective symbol (`map(enm.foo)`).
- * 
+ *
  * When calling a map, another map is returned. The only exception is when a map is called with `undefined`, this is the only way a final non-map result can be obtained, this is referred to as a "leaf" value.
- * 
+ *
  * If the leaf value is an api, it is implicitely executed and the result is returned instead.
  */
 export const map = (get) => {
@@ -49,21 +46,24 @@ export const map = (get) => {
 
 	let final_map;
 
-	let get_leaf = () => unsuspended_promise((async () => {
-		const result = await get(undefined);
+	const get_leaf = () =>
+		unsuspended_promise(
+			(async () => {
+				const result = await get(undefined);
 
-		if (is_api(result)) {
-			return await result();
-		}
+				if (is_api(result)) {
+					return await result();
+				}
 
-		return result;
-	})());
+				return result;
+			})(),
+		);
 
 	const raw_map = named_function(get.name, (input) => {
 		if (input === undefined) {
 			return get_leaf();
 		}
-		
+
 		if (is_enum(input) && input.data !== undefined) {
 			return raw_map(enm[input.sym])(input.data);
 		}
@@ -72,15 +72,17 @@ export const map = (get) => {
 
 		return map((input) => {
 			if (input === undefined) {
-				return unsuspended_promise((async () => {
-					const result = await get_output();
+				return unsuspended_promise(
+					(async () => {
+						const result = await get_output();
 
-					if (_is_map(result)) {
-						return await result();
-					}
+						if (_is_map(result)) {
+							return await result();
+						}
 
-					return result;
-				})());
+						return result;
+					})(),
+				);
 			}
 
 			return (async () => {
@@ -113,7 +115,16 @@ export const map = (get) => {
 				return () => "<uoe/map>";
 			}
 
-			if (["constructor", "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "__proto__", Symbol.toPrimitive].includes(prop)) {
+			if (
+				[
+					"constructor",
+					"hasOwnProperty",
+					"isPrototypeOf",
+					"propertyIsEnumerable",
+					"__proto__",
+					Symbol.toPrimitive,
+				].includes(prop)
+			) {
 				return target[prop];
 			}
 

@@ -1,14 +1,14 @@
-import { map } from "./map.js";
 import { call_as_async } from "./call_as_async.js";
+import { map } from "./map.js";
 
 // TODO: test
 /**
  * @deprecated See `obtain_map`. Scheduled for removal in June 2027.
- * 
+ *
  * Immediately returns a map equal to that eventually obtained by the given async function.
- * 
+ *
  * @example
- * 
+ *
  * const map = unsuspended_map(async () => {
  *   await timeout(1000);
  *   return map(() => {
@@ -17,7 +17,7 @@ import { call_as_async } from "./call_as_async.js";
  *     }
  *   });
  * });
- * 
+ *
  * console.log(await map()); // "foo"
  */
 export const unsuspended_map = (func) => {

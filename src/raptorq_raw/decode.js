@@ -1,7 +1,7 @@
 import { spawn } from "child_process";
-import { throw_error } from "../uoe/throw_error.js";
-import { error_user_payload } from "../uoe/error_user_payload.js";
 import { create_promise } from "../uoe/create_promise.js";
+import { error_user_payload } from "../uoe/error_user_payload.js";
+import { throw_error } from "../uoe/throw_error.js";
 
 const decode_blocks = ({ binary_path }, input) => {
 	const process = spawn(binary_path, ["--decode"], {
@@ -39,7 +39,7 @@ const decode_blocks = ({ binary_path }, input) => {
 					}
 				}
 			}
-		}
+		},
 	};
 
 	let buffer = [];
@@ -49,7 +49,7 @@ const decode_blocks = ({ binary_path }, input) => {
 	const RESUME_THRESHOLD = 512 * 1024; // Resume at 512KB
 	let paused = false;
 
-	process.stdout.on('data', (chunk) => {
+	process.stdout.on("data", (chunk) => {
 		// Binary now outputs blocks with format: [SBN: 1 byte][Block Size: 4 bytes, little-endian][Block Data: variable]
 		buffer.push(...chunk);
 
@@ -60,12 +60,14 @@ const decode_blocks = ({ binary_path }, input) => {
 		}
 
 		// Process complete blocks - we now know exact block sizes from the size header
-		while (buffer.length >= 5) { // Need at least SBN + size header
+		while (buffer.length >= 5) {
+			// Need at least SBN + size header
 			// Read SBN (1 byte)
 			const sbn = BigInt(buffer[0]);
 
 			// Read block size (4 bytes, little-endian) using BigInt for safe operations
-			const block_size = BigInt(buffer[1]) | (BigInt(buffer[2]) << 8n) | (BigInt(buffer[3]) << 16n) | (BigInt(buffer[4]) << 24n);
+			const block_size =
+				BigInt(buffer[1]) | (BigInt(buffer[2]) << 8n) | (BigInt(buffer[3]) << 16n) | (BigInt(buffer[4]) << 24n);
 
 			// Check if we have the complete block
 			const total_block_length = 5n + block_size; // 1 (SBN) + 4 (size) + block_size (data)
@@ -78,7 +80,9 @@ const decode_blocks = ({ binary_path }, input) => {
 
 			// Check for duplicate SBNs
 			if (seen_sbns.has(sbn)) {
-				console.warn(`⚠️  DUPLICATE SBN DETECTED: SBN ${sbn} already processed! This should never happen in RaptorQ. Skipping duplicate.`);
+				console.warn(
+					`⚠️  DUPLICATE SBN DETECTED: SBN ${sbn} already processed! This should never happen in RaptorQ. Skipping duplicate.`,
+				);
 				console.warn(`Previous SBNs seen: ${Array.from(seen_sbns).join(", ")}`);
 
 				// Skip the duplicate block - remove the processed bytes and continue
@@ -113,7 +117,7 @@ const decode_blocks = ({ binary_path }, input) => {
 		}
 	});
 
-	process.stdout.on('end', () => {
+	process.stdout.on("end", () => {
 		stream_ended = true;
 		if (iterator_waiting) {
 			block_res(null); // Signal end of stream
@@ -122,20 +126,20 @@ const decode_blocks = ({ binary_path }, input) => {
 		}
 	});
 
-	process.stderr.on('data', (chunk) => {
+	process.stderr.on("data", (chunk) => {
 		const message = chunk.toString().trim();
-		if (message.toLowerCase().includes('error') || message.toLowerCase().includes('failed')) {
+		if (message.toLowerCase().includes("error") || message.toLowerCase().includes("failed")) {
 			const error = new Error(`RaptorQ decoding error: ${message}`);
 			block_rej(error);
 		}
 	});
 
-	process.on('error', (error) => {
+	process.on("error", (error) => {
 		const wrapped_error = new Error(`Failed to spawn RaptorQ process: ${error.message}`);
 		block_rej(wrapped_error);
 	});
 
-	process.on('close', (code) => {
+	process.on("close", (code) => {
 		if (code !== 0) {
 			const error = new Error(`RaptorQ process exited with code ${code}`);
 			block_rej(error);
@@ -154,19 +158,19 @@ const decode_blocks = ({ binary_path }, input) => {
 		let process_closed = false;
 
 		// Track when process closes so we can stop writing
-		process.on('close', () => {
+		process.on("close", () => {
 			process_closed = true;
 		});
 
-		process.on('exit', () => {
+		process.on("exit", () => {
 			process_closed = true;
 		});
 
 		// Handle stdin errors (like EPIPE when process closes early)
-		process.stdin.on('error', (error) => {
-			if (error.code === 'EPIPE') {
+		process.stdin.on("error", (error) => {
+			if (error.code === "EPIPE") {
 				// Process closed early (likely finished decoding) - this is normal
-				console.log('RaptorQ decoder closed stdin (decoding complete)');
+				console.log("RaptorQ decoder closed stdin (decoding complete)");
 				process_closed = true;
 			} else {
 				// Other errors should be propagated
@@ -178,7 +182,7 @@ const decode_blocks = ({ binary_path }, input) => {
 		try {
 			const oti = input.oti;
 			if (!(oti instanceof Uint8Array) || oti.length !== 12) {
-				throw new Error('OTI must be a 12-byte Uint8Array');
+				throw new Error("OTI must be a 12-byte Uint8Array");
 			}
 
 			// Write OTI
@@ -190,12 +194,12 @@ const decode_blocks = ({ binary_path }, input) => {
 			for await (const symbol of input.encoding_packets) {
 				// Check if process has closed before writing each symbol
 				if (process_closed || process.stdin.destroyed) {
-					console.log('Stopping symbol writing - decoder process closed');
+					console.log("Stopping symbol writing - decoder process closed");
 					break;
 				}
 
 				if (!(symbol instanceof Uint8Array)) {
-					throw new Error('Each symbol must be a Uint8Array');
+					throw new Error("Each symbol must be a Uint8Array");
 				}
 
 				// Use a promise to detect write failures
@@ -205,21 +209,21 @@ const decode_blocks = ({ binary_path }, input) => {
 						// Wait for drain event or process close
 						await new Promise((resolve) => {
 							const onDrain = () => {
-								process.stdin.removeListener('close', onClose);
+								process.stdin.removeListener("close", onClose);
 								resolve();
 							};
 							const onClose = () => {
-								process.stdin.removeListener('drain', onDrain);
+								process.stdin.removeListener("drain", onDrain);
 								process_closed = true;
 								resolve();
 							};
-							process.stdin.once('drain', onDrain);
-							process.stdin.once('close', onClose);
+							process.stdin.once("drain", onDrain);
+							process.stdin.once("close", onClose);
 						});
 					}
 				} catch (write_error) {
-					if (write_error.code === 'EPIPE') {
-						console.log('EPIPE detected - decoder finished, stopping symbol feed');
+					if (write_error.code === "EPIPE") {
+						console.log("EPIPE detected - decoder finished, stopping symbol feed");
 						break;
 					}
 					throw write_error;
@@ -232,8 +236,8 @@ const decode_blocks = ({ binary_path }, input) => {
 			}
 		} catch (error) {
 			// Don't log EPIPE errors as they're expected when decoder finishes early
-			if (error.code !== 'EPIPE') {
-				console.error('Error in RaptorQ decoder symbol writer:', error);
+			if (error.code !== "EPIPE") {
+				console.error("Error in RaptorQ decoder symbol writer:", error);
 				const wrapped_error = new Error(`Error writing to RaptorQ decoder: ${error.message}`);
 				block_rej(wrapped_error);
 			}
@@ -262,7 +266,7 @@ const decode_combined = ({ binary_path }, input) => {
 
 			// Sort blocks by SBN and combine
 			const sorted_sbns = Array.from(blocks_map.keys()).sort((a, b) => Number(a - b));
-			const combined_blocks = sorted_sbns.map(sbn => blocks_map.get(sbn));
+			const combined_blocks = sorted_sbns.map((sbn) => blocks_map.get(sbn));
 
 			// Calculate total length and combine
 			const total_length = combined_blocks.reduce((sum, block) => sum + block.length, 0);
@@ -285,24 +289,16 @@ export const decode = ({ binary_path }, { usage, oti, encoding_packets }) => {
 	usage ??= {};
 	usage.output_format ??= "combined";
 
-	if (false
-		|| !(oti instanceof Uint8Array)
-		|| oti.length !== 12
-	) {
+	if (false || !(oti instanceof Uint8Array) || oti.length !== 12) {
 		throw_error(error_user_payload("Provided oti must be 12-byte Uint8Array."));
 	}
 
-	if (false
-		|| !encoding_packets
-		|| typeof encoding_packets[Symbol.asyncIterator] !== "function"
-	) {
+	if (false || !encoding_packets || typeof encoding_packets[Symbol.asyncIterator] !== "function") {
 		throw_error(error_user_payload("Provided encoding_packets must be iterable."));
 	}
 
-	if (false
-		|| !["combined", "blocks"].includes(usage.output_format)
-	) {
-		throw_error(error_user_payload("Provided output_format must be \"combined\" or \"blocks\"."));
+	if (false || !["combined", "blocks"].includes(usage.output_format)) {
+		throw_error(error_user_payload('Provided output_format must be "combined" or "blocks".'));
 	}
 
 	if (usage.output_format === "blocks") {

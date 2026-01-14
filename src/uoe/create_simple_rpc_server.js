@@ -6,21 +6,21 @@
  */
 export const create_simple_rpc_server = (express, cors, intf) => {
 	let next_exception = 0;
-	
+
 	const app = express();
 	app.use(express.json());
 	app.use(cors()); // allow all cors (safe provided we don't maintain state.....)
-	
+
 	///////////
 	// Change: possible methods are technically part of the typings, so this will no longer be incorporated directly in the runtime portion of the code.
 
 	// let methods = [];
-	
+
 	// for (let [name, func] of Object.entries(intf)) {
 	// 	if (typeof func !== "function") {
 	// 		continue;
 	// 	}
-	
+
 	// 	methods.push(name);
 	// }
 
@@ -28,15 +28,15 @@ export const create_simple_rpc_server = (express, cors, intf) => {
 	// 	res.json({ methods });
 	// });
 	///////////
-	
+
 	app.post("/rpc", async (req, res) => {
 		// TODO: this is legacy invocation format.
 		// new format uses a single `input` value which can be an enum.
 		// this must be changed soon.
 
-		let { method, args } = req.body;
+		const { method, args } = req.body;
 		let result, error;
-	
+
 		try {
 			result = await intf[method](...args);
 		} catch (e) {
@@ -50,18 +50,25 @@ export const create_simple_rpc_server = (express, cors, intf) => {
 					message: e.message,
 				};
 			} else {
-				let exception_id = next_exception++;
-	
-				console.error(e.name === "InternalError" ? `Hidden exception ${exception_id}` : `Unhandled exception ${exception_id}`);
+				const exception_id = next_exception++;
+
+				console.error(
+					e.name === "InternalError"
+						? `Hidden exception ${exception_id}`
+						: `Unhandled exception ${exception_id}`,
+				);
 				console.error(e);
-	
+
 				error = {
 					name: "InternalError",
-					message: e.name === "InternalError" ? `Hidden exception ${exception_id}` : `Unhandled exception ${exception_id}`,
+					message:
+						e.name === "InternalError"
+							? `Hidden exception ${exception_id}`
+							: `Unhandled exception ${exception_id}`,
 				};
 			}
 		}
-	
+
 		if (error) {
 			try {
 				var response = JSON.stringify({ error });
@@ -76,11 +83,11 @@ export const create_simple_rpc_server = (express, cors, intf) => {
 				});
 				return;
 			}
-	
+
 			res.status(200).end(response);
 			return;
 		}
-	
+
 		try {
 			var response = JSON.stringify({ result });
 		} catch (e) {
@@ -94,9 +101,9 @@ export const create_simple_rpc_server = (express, cors, intf) => {
 			});
 			return;
 		}
-	
+
 		res.status(200).end(response);
 	});
-	
+
 	return app;
-}
+};

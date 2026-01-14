@@ -182,7 +182,7 @@
         // Note: Actual WASM module would be loaded here
         // For now, this is a demonstration of the test interface
         
-        window.runTest = async function() {
+        window.runTest = async () => {
             const resultsDiv = document.getElementById('test-results');
             const outputDiv = document.getElementById('test-output');
             resultsDiv.style.display = 'block';
@@ -210,7 +210,7 @@
             }, 500);
         };
 
-        window.runBenchmark = async function() {
+        window.runBenchmark = async () => {
             const resultsDiv = document.getElementById('benchmark-results');
             const outputDiv = document.getElementById('benchmark-output');
             resultsDiv.style.display = 'block';
@@ -250,4 +250,9 @@
     </script>
 </body>
 </html>
+
+
+
+
+
 

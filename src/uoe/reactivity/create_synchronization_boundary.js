@@ -16,7 +16,7 @@ const create_synchronized = (deps, boundary, accessor) => {
 
 		const exposed_promise = (async () => {
 			await boundary.promise_queue.all();
-			let value = await promise;
+			const value = await promise;
 			boundary.promise_queue = undefined;
 			boundary._set_is_loading(false);
 			return value;

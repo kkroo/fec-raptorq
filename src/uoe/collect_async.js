@@ -1,6 +1,6 @@
 /**
  * @stability 2 - provisional
- * 
+ *
  * Collects all items from an async iterable into an array.
  */
 export const collect_async = async (async_iterable) => {
@@ -9,7 +9,7 @@ export const collect_async = async (async_iterable) => {
 	for await (const item of await async_iterable) {
 		result.push(item);
 	}
-	
+
 	return result;
 };
 

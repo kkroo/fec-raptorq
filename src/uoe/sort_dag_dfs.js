@@ -1,8 +1,8 @@
 /**
  * Sorts a directed acyclic graph (DAG) using depth-first search (DFS).
- * 
+ *
  * @example
- * 
+ *
  * const edges = [
  *   ["a", "b"],
  *   ["a", "c"],
@@ -11,7 +11,7 @@
  *   ["c", "d"],
  *   ["d", "e"],
  * ];
- * 
+ *
  * const order = sort_dag_dfs(edges); // ["a", "c", "b", "d", "e"]
  */
 export const sort_dag_dfs = (edges) => {

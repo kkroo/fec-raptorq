@@ -19,7 +19,7 @@ export interface StrategySbn {
 }
 
 export interface StrategyEsi {
-	external_bits?: number; // 2-24, default 24  
+	external_bits?: number; // 2-24, default 24
 	remap?: RemapFunctions;
 }
 

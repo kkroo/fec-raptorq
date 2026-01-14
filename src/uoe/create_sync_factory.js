@@ -5,7 +5,7 @@ import { named_function } from "./named_function.js";
 
 /**
  * @stability 1 - experimental
- * 
+ *
  * Creates an synchronous factory for a class.
  */
 export const create_sync_factory = (cls) => {
@@ -13,8 +13,8 @@ export const create_sync_factory = (cls) => {
 		// This makes debugging nicer because the original object will be a function and so it will not wrapped by a function down the road (which is otherwise accomplished in `callable` using proxies).
 
 		const orig_cls = cls;
-		
-		cls = named_function(orig_cls.name, function (...args) {
+
+		cls = named_function(orig_cls.name, (...args) => {
 			const obj = new orig_cls(...args);
 			const result = new Function();
 			Object.setPrototypeOf(result, cls.prototype);
@@ -31,13 +31,7 @@ export const create_sync_factory = (cls) => {
 		const obj = new cls(...args);
 		obj._init && obj._init(...args);
 
-		const adjusted_obj = obj._call !== undefined
-			? callable(
-				obj,
-				function(...args) { return obj._call(...args) }
-			)
-			: obj
-		;
+		const adjusted_obj = obj._call !== undefined ? callable(obj, (...args) => obj._call(...args)) : obj;
 
 		const result = new Proxy(adjusted_obj, {
 			get(target, key) {
@@ -48,7 +42,7 @@ export const create_sync_factory = (cls) => {
 				return target[key];
 			},
 		});
-		
+
 		return typeof result === "function" ? bind_self(result) : result;
 	};
 };

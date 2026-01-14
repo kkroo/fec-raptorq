@@ -7,7 +7,7 @@ export const map_collect_async = (iterable, mapper) => {
 
 	for (const item of iterable) {
 		const curr_i = i;
-		promises.push(item.then(result => mapper(result, curr_i)));
+		promises.push(item.then((result) => mapper(result, curr_i)));
 		i++;
 	}
 

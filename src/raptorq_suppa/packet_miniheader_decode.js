@@ -26,14 +26,14 @@ export const packet_miniheader_decode = (strategy, header_data) => {
 			symbol_alignment: { external_bits: 8n, ...strategy.oti.symbol_alignment },
 		};
 
-		const oti_total_bits = (0n
-			+ oti_config.transfer_length.external_bits
-			+ oti_config.fec_encoding_id.external_bits
-			+ oti_config.symbol_size.external_bits
-			+ oti_config.num_source_blocks.external_bits
-			+ oti_config.num_sub_blocks.external_bits
-			+ oti_config.symbol_alignment.external_bits
-		);
+		const oti_total_bits =
+			0n +
+			oti_config.transfer_length.external_bits +
+			oti_config.fec_encoding_id.external_bits +
+			oti_config.symbol_size.external_bits +
+			oti_config.num_source_blocks.external_bits +
+			oti_config.num_sub_blocks.external_bits +
+			oti_config.symbol_alignment.external_bits;
 
 		if (oti_total_bits > 0n) {
 			const oti_bytes = Number(bigint_ceil(oti_total_bits, 8n));
@@ -46,7 +46,7 @@ export const packet_miniheader_decode = (strategy, header_data) => {
 	const sbn_bits = strategy.encoding_packet.sbn.external_bits;
 	total_bits += sbn_bits;
 
-	// ESI 
+	// ESI
 	const esi_bits = strategy.encoding_packet.esi.external_bits;
 	total_bits += esi_bits;
 

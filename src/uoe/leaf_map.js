@@ -1,16 +1,16 @@
-import { map } from "./map.js";
 import { is_map } from "./is_map.js";
+import { map } from "./map.js";
 
 /**
  * @stability 2 - provisional
- * 
+ *
  * Constructs a uoe-map object with only a single leaf value.
- * 
+ *
  * @example
- * 
+ *
  * const first_name = leaf_map("john");
  * const last_name = leaf_map(Promise.resolve("doe"));
- * 
+ *
  * console.log(await first_name()); // "john"
  * console.log(await last_name()); // "doe"
  */

@@ -1,5 +1,5 @@
-import { test } from "./test.js";
 import { map } from "./map.js";
+import { test } from "./test.js";
 import { unsuspended_promise } from "./unsuspended_promise.js";
 
 await test("basic test", async () => {
@@ -11,7 +11,7 @@ await test("basic test", async () => {
 		return "world";
 	});
 
-	return await m() === "hello" && await m.foo() === "world";
+	return (await m()) === "hello" && (await m.foo()) === "world";
 });
 
 await test("unsuspension", async () => {
@@ -25,7 +25,7 @@ await test("unsuspension", async () => {
 
 	const m2 = unsuspended_promise(m);
 
-	return await m2() === "hello" && await m2.foo() === "world";
+	return (await m2()) === "hello" && (await m2.foo()) === "world";
 });
 
 await test("complex test", async () => {
@@ -41,7 +41,7 @@ await test("complex test", async () => {
 		});
 	});
 
-	return await m.test() === "hello";
+	return (await m.test()) === "hello";
 });
 
 await test("complex test 2", async () => {
@@ -60,8 +60,8 @@ await test("complex test 2", async () => {
 					return "hello";
 				}
 			});
-		})
+		});
 	});
 
-	return await m.test.test() === "hello";
+	return (await m.test.test()) === "hello";
 });

@@ -249,3 +249,8 @@ The RaptorQ WASM SIMD128 implementation has **passed all E2E tests** and is read
 *For SIMD-specific documentation, see `README-SIMD.md`*  
 *For build instructions, see `build-simd.sh`*
 
+
+
+
+
+

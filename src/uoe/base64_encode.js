@@ -3,7 +3,7 @@ import { throw_error } from "./throw_error.js";
 
 /**
  * No-one should ever have the write a `base64_encode` function again.
- * 
+ *
  * Aside - Why is there still no better web standard than working with Latin-1 strings?
  */
 export const base64_encode = (input) => {

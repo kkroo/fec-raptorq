@@ -1,6 +1,6 @@
+import { map } from "./map.js";
 import { test } from "./test.js";
 import { unsuspended_map } from "./unsuspended_map.js";
-import { map } from "./map.js"; 
 
 const timeout = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -15,5 +15,5 @@ test("unsuspended map", async () => {
 		});
 	});
 
-	return await m() === "foo";
+	return (await m()) === "foo";
 });

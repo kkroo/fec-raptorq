@@ -2,21 +2,21 @@ import { empty_map } from "./empty_map.js";
 
 /**
  * Constructs a larger map from a list of patterns and their corresponding maps.
- * 
+ *
  * @example
- * 
+ *
  * const default_map = leaf_map("foobar");
- * 
+ *
  * const map = pattern_map([
  *   default_map,
  * 	 ["foo", leaf_map("foo")],
  *   ["bar", leaf_map("bar")],
  * ]);
- * 
+ *
  * await map(); // "foobar"
  * await map("foo")(); // "foo"
  * await map("bar")(); // "bar"
- * 
+ *
  * @todo Implement more patterns than just a simple symbol match.
  */
 export const pattern_map = (patterns) => {
@@ -31,10 +31,7 @@ export const pattern_map = (patterns) => {
 	}
 
 	for (const pattern of patterns) {
-		if (! (false
-			|| Array.isArray(pattern)
-			|| is_map(pattern)
-		)) {
+		if (!(false || Array.isArray(pattern) || is_map(pattern))) {
 			throw TypeError("Each pattern must be an array or a map for the default pattern.");
 		}
 
@@ -44,7 +41,7 @@ export const pattern_map = (patterns) => {
 			}
 
 			const [left, map] = pattern;
-			
+
 			const symbol = (() => {
 				if (typeof left === "string") {
 					return enm[left];

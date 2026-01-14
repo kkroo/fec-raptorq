@@ -1,41 +1,41 @@
-import { test } from "../test.js";
-import { e } from "./e.js";
-import { is_map } from "../is_map.js";
-import { map } from "../map.js";
 import { get_enum } from "../get_enum.js";
 import { is_enum } from "../is_enum.js";
+import { is_map } from "../is_map.js";
+import { map } from "../map.js";
+import { test } from "../test.js";
+import { e } from "./e.js";
 
 await test("constant", async () => {
 	const number = 123n;
-	return await e`${number}`() === number;
+	return (await e`${number}`()) === number;
 });
 
 await test("true", async () => {
-	return await e`true`() === true;
+	return (await e`true`()) === true;
 });
 
 await test("false", async () => {
-	return await e`false`() === false;
+	return (await e`false`()) === false;
 });
 
 await test("int", async () => {
-	return await e`1`() === 1n;
+	return (await e`1`()) === 1n;
 });
 
 await test("float", async () => {
-	return await e`1.23`() === 1.23;
+	return (await e`1.23`()) === 1.23;
 });
 
 await test("string", async () => {
-	return await e`"foo"`() === "foo";
+	return (await e`"foo"`()) === "foo";
 });
 
 await test("addition", async () => {
-	return await e`1 + 2 - 4 + 8`() === 7n;
+	return (await e`1 + 2 - 4 + 8`()) === 7n;
 });
 
 await test("multiplication", async () => {
-	return await e`1 * 2 / 4 * 8`() === 4n;
+	return (await e`1 * 2 / 4 * 8`()) === 4n;
 });
 
 await test("long addition", async () => {
@@ -49,7 +49,7 @@ await test("long addition", async () => {
 	  - ${expenses}
 	`;
 
-	return await closing_balance() === 1300n;
+	return (await closing_balance()) === 1300n;
 });
 
 await test("long multiplication", async () => {
@@ -62,54 +62,62 @@ await test("long multiplication", async () => {
 	  * ${gravitational_constant}
 	  * ${mass_a}
 	  * ${mass_b}
-	  / ${Math.pow(await distance(), 2)}
+	  / ${(await distance()) ** 2}
 	`;
 
 	return (await force()).toFixed(5) === "0.00335";
 });
 
 await test("negative number", async () => {
-	return await e`-1`() === -1n;
+	return (await e`-1`()) === -1n;
 });
 
 await test("inverse number", async () => {
-	return await e`/4.0`() === 0.25;
+	return (await e`/4.0`()) === 0.25;
 });
 
 await test("logical or 1", async () => {
-	return await e`
+	return (
+		(await e`
 	  || false
 	  || false
 	  || false
-	`() === false;
+	`()) === false
+	);
 });
 
 await test("logical or 2", async () => {
-	return await e`
+	return (
+		(await e`
 	  || false
 	  || true
 	  || false
-	`() === true;
+	`()) === true
+	);
 });
 
 await test("logical and 1", async () => {
-	return await e`
+	return (
+		(await e`
 	  && false
 	  && true
 	  && false
-	`() === false;
+	`()) === false
+	);
 });
 
 await test("logical and 2", async () => {
-	return await e`
+	return (
+		(await e`
 	  && true
 	  && true
 	  && true
-	`() === true;
+	`()) === true
+	);
 });
 
 await test("logical not", async () => {
-	return await e`!true`() === false && await e`!false`() === true;
+	return (await e`!true`()) === false && (await e`!false`()) === true;
 });
 
 await test("bare enum", async () => {
@@ -140,7 +148,7 @@ await test("enum with empty map", async () => {
 
 await test("comma positional tuple", async () => {
 	const foo = e`("foo", "bar")`;
-	return await foo[0]() === "foo" && await foo[1]() === "bar";
+	return (await foo[0]()) === "foo" && (await foo[1]()) === "bar";
 });
 
 await test("semi positional tuple", async () => {
@@ -149,12 +157,12 @@ await test("semi positional tuple", async () => {
 		"bar";
 	)`;
 
-	return await foo[0]() === "foo" && await foo[1]() === "bar";
+	return (await foo[0]()) === "foo" && (await foo[1]()) === "bar";
 });
 
 await test("comma named tuple", async () => {
 	const foo = e`(:name "john doe", :age 27)`;
-	return await foo.name() === "john doe" && await foo.age() === 27n;
+	return (await foo.name()) === "john doe" && (await foo.age()) === 27n;
 });
 
 await test("semi named tuple", async () => {
@@ -163,17 +171,17 @@ await test("semi named tuple", async () => {
 		:age 27;
 	)`;
 
-	return await foo.name() === "john doe" && await foo.age() === 27n;
+	return (await foo.name()) === "john doe" && (await foo.age()) === 27n;
 });
 
 await test("tuple parenthesis", async () => {
 	const foo = e`(: 5 + 5)`;
-	return await foo() === 10n;
+	return (await foo()) === 10n;
 });
 
 await test("comma nested tuple", async () => {
 	const foo = e`(:name:first "john", :name:last "doe", :age 27)`;
-	return await foo.name.first() === "john" && await foo.name.last() === "doe" && await foo.age() === 27n;
+	return (await foo.name.first()) === "john" && (await foo.name.last()) === "doe" && (await foo.age()) === 27n;
 });
 
 await test("semi nested tuple", async () => {
@@ -182,7 +190,7 @@ await test("semi nested tuple", async () => {
 		:name:last "doe";
 		:age 27;
 	)`;
-	return await foo.name.first() === "john" && await foo.name.last() === "doe" && await foo.age() === 27n;
+	return (await foo.name.first()) === "john" && (await foo.name.last()) === "doe" && (await foo.age()) === 27n;
 });
 
 await test("nested tuple 2", async () => {
@@ -191,11 +199,12 @@ await test("nested tuple 2", async () => {
 		:friend:joe (:name "dohn", :age 27);
 	)`;
 
-	return (true
-		&& await foo.friend.john.name() === "doe"
-		&& await foo.friend.john.age() === 27n
-		&& await foo.friend.joe.name() === "dohn"
-		&& await foo.friend.joe.age() === 27n
+	return (
+		true &&
+		(await foo.friend.john.name()) === "doe" &&
+		(await foo.friend.john.age()) === 27n &&
+		(await foo.friend.joe.name()) === "dohn" &&
+		(await foo.friend.joe.age()) === 27n
 	);
 });
 
@@ -205,17 +214,18 @@ await test("nested tuple 3", async () => {
 		:friend:joe :alien(:eyes "green");
 	)`;
 
-	return (true
-		&& await get_enum(foo.friend.john).sym === "human"
-		&& await get_enum(foo.friend.john).data.hair() === "black"
-		&& await get_enum(foo.friend.joe).sym === "alien"
-		&& await get_enum(foo.friend.joe).data.eyes() === "green"
+	return (
+		true &&
+		(await get_enum(foo.friend.john).sym) === "human" &&
+		(await get_enum(foo.friend.john).data.hair()) === "black" &&
+		(await get_enum(foo.friend.joe).sym) === "alien" &&
+		(await get_enum(foo.friend.joe).data.eyes()) === "green"
 	);
 });
 
 await test("block parenthesis", async () => {
 	const foo = e`{: 5 + 5}`;
-	return await foo() === 10n;
+	return (await foo()) === 10n;
 });
 
 await test("constant map call", async () => {
@@ -223,8 +233,8 @@ await test("constant map call", async () => {
 		const value = await get_enum(input);
 		return value.sym;
 	})}:test`;
-	
-	return await result() === "test";
+
+	return (await result()) === "test";
 });
 
 await test("self-referential variables", async () => {
@@ -234,7 +244,7 @@ await test("self-referential variables", async () => {
 		:last_name "doe";
 	)`;
 
-	return await foo.name() === "john doe";
+	return (await foo.name()) === "john doe";
 });
 
 await test("variables", async () => {
@@ -243,7 +253,7 @@ await test("variables", async () => {
 		: x * 2;
 	)`;
 
-	return await foo() === 10n;
+	return (await foo()) === 10n;
 });
 
 // Todo list

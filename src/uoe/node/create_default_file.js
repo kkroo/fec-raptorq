@@ -1,6 +1,6 @@
 /**
  * @stability 2 - provisional
- * 
+ *
  * Creates a file with the desired data if it does not already exist.
  */
 export const create_default_file = async (dependencies, path, data) => {

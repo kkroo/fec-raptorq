@@ -21,7 +21,7 @@ export const packet_header_encode = (strategy, oti_data, external_sbn, external_
 	const sbn_bits = strategy.encoding_packet.sbn.external_bits;
 	total_bits += sbn_bits;
 
-	// ESI 
+	// ESI
 	const esi_bits = strategy.encoding_packet.esi.external_bits;
 	total_bits += esi_bits;
 

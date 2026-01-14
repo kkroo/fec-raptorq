@@ -9,7 +9,9 @@ export const hex_encode = (bytes) => {
 		throw_error(error_user_payload("bytes must be uint8array"));
 	}
 
-	return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+	return Array.from(bytes)
+		.map((byte) => byte.toString(16).padStart(2, "0"))
+		.join("");
 };
 
 export const hexEncode = hex_encode;

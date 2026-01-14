@@ -24,13 +24,18 @@ console.log(`Debug: ${bit_array.to_debug_string()}`);
 // Test bit getting
 console.log("\n=== Bit Reading ===");
 for (let i = 0; i < bit_array.length; i++) {
-    console.log(`Bit ${i}: ${bit_array.get_bit(i)}`);
+	console.log(`Bit ${i}: ${bit_array.get_bit(i)}`);
 }
 
 // Test underlying Uint8Array
 console.log("\n=== Underlying Uint8Array ===");
 const underlying = bit_array.to_uint8_array();
-console.log("Underlying bytes:", Array.from(underlying).map(b => `0x${b.toString(16).padStart(2, "0")}`).join(" "));
+console.log(
+	"Underlying bytes:",
+	Array.from(underlying)
+		.map((b) => `0x${b.toString(16).padStart(2, "0")}`)
+		.join(" "),
+);
 
 // Test byte operations
 console.log("\n=== Byte Operations ===");
@@ -81,13 +86,13 @@ iter_test.set_byte(0, 0b101010);
 console.log("Using for...of:");
 let index = 0;
 for (const bit of iter_test) {
-    console.log(`  Position ${index}: ${bit}`);
-    index++;
+	console.log(`  Position ${index}: ${bit}`);
+	index++;
 }
 
 console.log("Using entries():");
 for (const [pos, bit] of iter_test.entries()) {
-    console.log(`  Position ${pos}: ${bit}`);
+	console.log(`  Position ${pos}: ${bit}`);
 }
 
 // Test utility methods
@@ -110,7 +115,12 @@ edge_test.fill(1);
 
 console.log(`10-bit array filled with 1s: ${edge_test.to_string()}`);
 const clean_bytes = edge_test.to_uint8_array();
-console.log("Clean bytes:", Array.from(clean_bytes).map(b => `0b${b.toString(2).padStart(8, "0")}`).join(" "));
+console.log(
+	"Clean bytes:",
+	Array.from(clean_bytes)
+		.map((b) => `0b${b.toString(2).padStart(8, "0")}`)
+		.join(" "),
+);
 
 // Test from static method
 console.log("\n=== Static from() Method ===");
@@ -127,14 +137,14 @@ func_test.set_byte(0, 0b101100);
 
 console.log(`Original: ${func_test.to_string()}`);
 
-const mapped = func_test.map((bit, index) => (index % 2 === 0) ? 1 - bit : bit);
+const mapped = func_test.map((bit, index) => (index % 2 === 0 ? 1 - bit : bit));
 console.log(`Mapped (flip even positions): ${mapped.to_string()}`);
 
-const filtered = func_test.filter(bit => bit === 1);
+const filtered = func_test.filter((bit) => bit === 1);
 console.log(`Filtered (only 1s): ${filtered.to_string()}`);
 
-const all_ones = func_test.every(bit => bit === 1);
-const has_ones = func_test.some(bit => bit === 1);
+const all_ones = func_test.every((bit) => bit === 1);
+const has_ones = func_test.some((bit) => bit === 1);
 console.log(`All ones: ${all_ones}, Has ones: ${has_ones}`);
 
 const sum = func_test.reduce((acc, bit) => acc + bit, 0);

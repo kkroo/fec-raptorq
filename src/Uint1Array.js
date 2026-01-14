@@ -111,7 +111,7 @@ class Uint1Array {
 			throw new RangeError("Byte index out of range");
 		}
 
-		this._buffer[byte_index] = value & 0xFF;
+		this._buffer[byte_index] = value & 0xff;
 	}
 
 	// Get underlying Uint8Array with erroneous bits zeroed
@@ -119,10 +119,10 @@ class Uint1Array {
 		const result = new Uint8Array(this._buffer);
 
 		// Zero out any bits beyond the intended length
-		const excess_bits = (this._byte_length * 8) - this._length_in_bits;
+		const excess_bits = this._byte_length * 8 - this._length_in_bits;
 		if (excess_bits > 0) {
 			const last_byte_index = this._byte_length - 1;
-			const mask = 0xFF << excess_bits;
+			const mask = 0xff << excess_bits;
 			result[last_byte_index] &= mask;
 		}
 
@@ -171,7 +171,7 @@ class Uint1Array {
 			temp_bits.push(this.get_bit(actual_start + i));
 		}
 
-		for (let i = 0; i < copy_length && (target + i) < this._length_in_bits; i++) {
+		for (let i = 0; i < copy_length && target + i < this._length_in_bits; i++) {
 			this.set_bit(target + i, temp_bits[i]);
 		}
 
@@ -408,7 +408,7 @@ class Uint1Array {
 	to_debug_string() {
 		const bit_string = this.to_string();
 		const byte_representation = Array.from(this._buffer)
-			.map(byte => byte.toString(16).padStart(2, "0"))
+			.map((byte) => byte.toString(16).padStart(2, "0"))
 			.join(" ");
 
 		return `Uint1Array(${this._length_in_bits} bits): ${bit_string} [${byte_representation}]`;
@@ -443,10 +443,7 @@ class Uint1Array {
 			throw new RangeError("Offset out of range");
 		}
 
-		const copy_length = Math.min(
-			source._length_in_bits,
-			this._length_in_bits - offset,
-		);
+		const copy_length = Math.min(source._length_in_bits, this._length_in_bits - offset);
 
 		for (let i = 0; i < copy_length; i++) {
 			this.set_bit(offset + i, source.get_bit(i));
@@ -464,10 +461,7 @@ class Uint1Array {
 			throw new RangeError("Offset out of range");
 		}
 
-		const bits_to_copy = Math.min(
-			source.length * 8,
-			this._length_in_bits - offset,
-		);
+		const bits_to_copy = Math.min(source.length * 8, this._length_in_bits - offset);
 
 		for (let i = 0; i < bits_to_copy; i++) {
 			const byte_index = Math.floor(i / 8);

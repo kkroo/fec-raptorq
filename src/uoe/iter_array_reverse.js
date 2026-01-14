@@ -1,8 +1,8 @@
 /**
  * @stability 3 - stable
- * 
+ *
  * Iterates an array in reverse.
-*/
+ */
 
 export const iter_array_reverse = (arr) => {
 	return {

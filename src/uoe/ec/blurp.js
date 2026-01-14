@@ -19,30 +19,30 @@ export function str(string) {
 
 export function reg(re) {
 	return (input) => {
-		let match = input.match(re);
+		const match = input.match(re);
 		if (re.toString() == "/^(?!\n)/s") {
 			console.log(re);
 			console.log(match);
 		}
 
 		if (match) {
-			let all = match[0];
-			let offset = match.index + all.length;
-			let groups = { all: match[0], };
+			const all = match[0];
+			const offset = match.index + all.length;
+			const groups = { all: match[0] };
 
 			for (let i = 1; i < match.length; i++) {
 				groups[i - 1] = match[i];
 			}
 
-			for (let key in match.groups) {
+			for (const key in match.groups) {
 				groups[key] = match.groups[key];
 			}
-			
+
 			return {
 				success: true,
 				input: input.substring(offset),
 				data: { groups },
-			}
+			};
 		} else {
 			return {
 				success: false,
@@ -62,13 +62,13 @@ export function auto(parser) {
 }
 
 export function join(...parsers) {
-	parsers = parsers.map(parser => auto(parser));
+	parsers = parsers.map((parser) => auto(parser));
 
 	return (input) => {
-		let data = [];
+		const data = [];
 
-		for (let parser of parsers) {
-			let result = parser(input);
+		for (const parser of parsers) {
+			const result = parser(input);
 
 			if (result.success) {
 				input = result.input;
@@ -90,11 +90,11 @@ export function join(...parsers) {
 
 export function join_collect(...parserFactories) {
 	return (input) => {
-		let data = [];
+		const data = [];
 
-		for (let parserFactory of parserFactories) {
-			let parser = auto(parserFactory(data[data.length - 1]));
-			let result = parser(input);
+		for (const parserFactory of parserFactories) {
+			const parser = auto(parserFactory(data[data.length - 1]));
+			const result = parser(input);
 
 			if (result.success) {
 				input = result.input;
@@ -118,7 +118,7 @@ export function opt(parser) {
 	parser = auto(parser);
 
 	return (input) => {
-		let result = parser(input);
+		const result = parser(input);
 
 		if (result.success) {
 			return result;
@@ -137,10 +137,10 @@ function internal_multi(parser) {
 	parser = auto(parser);
 
 	return (input) => {
-		let data = [];
+		const data = [];
 
 		while (true) {
-			let result = parser(input);
+			const result = parser(input);
 
 			if (result.success) {
 				input = result.input;
@@ -172,24 +172,24 @@ export function multi_2(parser, sep) {
 		// 	result[0],
 		// 	...result[1].map(r => r[1]),
 		// ] : []);
-		return mapData(join(parser, opt(internal_multi(join(sep, parser)))), result => [
+		return mapData(join(parser, opt(internal_multi(join(sep, parser)))), (result) => [
 			// ...result.data ? [result.data[0]] : [],
 			// ...result.data ? [result.data[1].map(r => r[1])] : [],
 			result[0],
-			...result[1] ? result[1].map(r => r[1]) : []
+			...(result[1] ? result[1].map((r) => r[1]) : []),
 			// ...result[1].map(r => r[1]),
 		]);
 	}
 }
 
 export function multi(parser, sep) {
-	return mapData(multi_2(parser, sep), data => {
+	return mapData(multi_2(parser, sep), (data) => {
 		return data;
-	})
+	});
 }
 
 export function opt_multi(parser, sep) {
-	return map(opt(multi(parser, sep)), result => ({
+	return map(opt(multi(parser, sep)), (result) => ({
 		...result,
 		data: result.ignored_failure ? [] : result.data,
 	}));
@@ -202,17 +202,17 @@ export function grab(parser, count) {
 				success: true,
 				input,
 				data: [],
-			}
+			};
 		};
 	}
 
 	parser = auto(parser);
 
 	return (input) => {
-		let data = [];
+		const data = [];
 
 		for (let i = 0; i < count; i++) {
-			let result = parser(input);
+			const result = parser(input);
 
 			if (result.success) {
 				input = result.input;
@@ -227,7 +227,7 @@ export function grab(parser, count) {
 				}
 			}
 		}
-		
+
 		return {
 			success: true,
 			input,
@@ -237,12 +237,12 @@ export function grab(parser, count) {
 }
 
 export function orv(...parsers) {
-	parsers = parsers.map(parser => auto(parser));
+	parsers = parsers.map((parser) => auto(parser));
 
 	return (input) => {
 		for (let i = 0; i < parsers.length; i++) {
-			let parser = parsers[i];
-			let result = parser(input);
+			const parser = parsers[i];
+			const result = parser(input);
 
 			if (result.success) {
 				return {
@@ -252,7 +252,7 @@ export function orv(...parsers) {
 						idx: i,
 						choice: result.data,
 					},
-				}
+				};
 			}
 		}
 
@@ -263,7 +263,7 @@ export function orv(...parsers) {
 }
 
 export function or(...parsers) {
-	return mapData(orv(...parsers), data => data.choice);
+	return mapData(orv(...parsers), (data) => data.choice);
 }
 
 export function map(parser, mapper) {
@@ -271,12 +271,12 @@ export function map(parser, mapper) {
 
 	return (input) => {
 		return mapper(parser(input));
-	}
+	};
 }
 
 export function lookAhead(parser) {
 	parser = auto(parser);
-	
+
 	return (input) => {
 		return {
 			...parser(input),
@@ -290,22 +290,22 @@ export function mapData(parser, mapper) {
 
 	return map(parser, (result) => ({
 		...result,
-		...result.success && {
+		...(result.success && {
 			data: mapper(result.data),
-		},
+		}),
 	}));
 }
 
 export function declare() {
 	let parser;
 
-	let result = (input) => {
+	const result = (input) => {
 		return parser(input);
 	};
 
 	result.define = (parser_) => {
 		parser = parser_;
 	};
-	
+
 	return result;
 }

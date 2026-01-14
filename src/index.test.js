@@ -1,7 +1,7 @@
-import { test } from "./uoe/test.js";
-import { compare_bytes } from "./uoe/compare_bytes.js";
 import { raptorq_raw as raw, raptorq_suppa as suppa } from "./index.js";
 import { bigint_ceil } from "./uoe/bigint_ceil.js";
+import { compare_bytes } from "./uoe/compare_bytes.js";
+import { test } from "./uoe/test.js";
 
 // Helper function to create test data
 function createTestData(size = 1000) {
@@ -33,7 +33,7 @@ test("raw.encode - basic encoding returns oti and symbols", async () => {
 	}
 
 	// Check that encoding_packets is an async iterable
-	if (typeof result.encoding_packets[Symbol.asyncIterator] !== 'function') {
+	if (typeof result.encoding_packets[Symbol.asyncIterator] !== "function") {
 		return false;
 	}
 
@@ -53,7 +53,9 @@ test("raw.encode - basic encoding returns oti and symbols", async () => {
 		const expectedSymbolCount = Math.ceil(testData.length / 1400) + 15; // source symbols + repair symbols
 
 		for await (const symbol of result.encoding_packets) {
-			console.log(`Test: Received symbol ${symbolCount + 1}, type: ${typeof symbol}, instance: ${symbol instanceof Uint8Array}, length: ${symbol?.length}`);
+			console.log(
+				`Test: Received symbol ${symbolCount + 1}, type: ${typeof symbol}, instance: ${symbol instanceof Uint8Array}, length: ${symbol?.length}`,
+			);
 			if (!(symbol instanceof Uint8Array)) {
 				console.log("Test: Symbol is not Uint8Array, failing test");
 				return false;
@@ -99,7 +101,8 @@ test("raw.encode - custom configuration", async () => {
 
 		// Calculate expected number of symbols based on configuration
 		// For 500 bytes with symbol_size 800: 1 source symbol + 10 repair symbols = 11 total
-		const expectedSymbolCount = Math.ceil(testData.length / Number(config.symbol_size)) + Number(config.num_repair_symbols);
+		const expectedSymbolCount =
+			Math.ceil(testData.length / Number(config.symbol_size)) + Number(config.num_repair_symbols);
 
 		for await (const symbol of result.encoding_packets) {
 			symbolCount++;
@@ -111,7 +114,9 @@ test("raw.encode - custom configuration", async () => {
 
 		// Verify we got the expected number of symbols
 		if (symbolCount !== expectedSymbolCount) {
-			console.log(`Custom config test: Symbol count mismatch - got ${symbolCount}, expected ${expectedSymbolCount}`);
+			console.log(
+				`Custom config test: Symbol count mismatch - got ${symbolCount}, expected ${expectedSymbolCount}`,
+			);
 			return false;
 		}
 
@@ -143,13 +148,13 @@ test("raw.decode - basic decoding", async () => {
 				for (const symbol of symbols) {
 					yield symbol;
 				}
-			}
+			},
 		};
 
 		// Now decode
 		const decoded = raw.decode({
 			oti: oti,
-			encoding_packets: symbolIterator
+			encoding_packets: symbolIterator,
 		});
 
 		// Wait for the decoded data
@@ -157,7 +162,6 @@ test("raw.decode - basic decoding", async () => {
 
 		// Verify the decoded data matches original
 		return arraysEqual(testData, decodedData);
-
 	} catch (error) {
 		console.error("Decoding test error:", error);
 		return false;
@@ -185,19 +189,18 @@ test("raw encode/decode - round trip with small data", async () => {
 				for (const symbol of symbols) {
 					yield symbol;
 				}
-			}
+			},
 		};
 
 		const decoded = raw.decode({
 			oti: oti,
-			encoding_packets: symbolIterator
+			encoding_packets: symbolIterator,
 		});
 
 		// Wait for decoded data and verify
 		const decodedData = await decoded;
 
 		return arraysEqual(originalData, decodedData);
-
 	} catch (error) {
 		console.error("Round trip test error:", error);
 		return false;
@@ -214,9 +217,9 @@ test("raw decode - block output format", async () => {
 			options: {
 				symbol_size: 48n,
 				num_repair_symbols: 5n,
-				num_source_blocks: 2n  // Use 2 blocks to test block output
+				num_source_blocks: 2n, // Use 2 blocks to test block output
 			},
-			data: originalData
+			data: originalData,
 		});
 
 		// Collect the encoded data
@@ -232,27 +235,27 @@ test("raw decode - block output format", async () => {
 				for (const symbol of symbols) {
 					yield symbol;
 				}
-			}
+			},
 		};
 
 		// Decode with block format
 		const decoded = raw.decode({
 			usage: {
-				output_format: "blocks"
+				output_format: "blocks",
 			},
 			oti,
-			encoding_packets: symbolIterator
+			encoding_packets: symbolIterator,
 		});
 
 		// Verify result has blocks async iterable
-		if (!decoded.blocks || typeof decoded.blocks[Symbol.asyncIterator] !== 'function') {
+		if (!decoded.blocks || typeof decoded.blocks[Symbol.asyncIterator] !== "function") {
 			return false;
 		}
 
 		// Collect blocks
 		const blocks = [];
 		for await (const block of decoded.blocks) {
-			if (typeof block.sbn !== 'bigint' || !(block.data instanceof Uint8Array)) {
+			if (typeof block.sbn !== "bigint" || !(block.data instanceof Uint8Array)) {
 				return false;
 			}
 			blocks.push(block);
@@ -288,7 +291,6 @@ test("raw decode - block output format", async () => {
 		}
 
 		return true;
-
 	} catch (error) {
 		console.error("Block decoding test error:", error);
 		return false;
@@ -304,18 +306,18 @@ test("raw decode - invalid output format", () => {
 		try {
 			raw.decode({
 				usage: {
-					output_format: "invalid"
+					output_format: "invalid",
 				},
 				oti: new Uint8Array(12),
 				encoding_packets: {
 					async *[Symbol.asyncIterator]() {
 						yield new Uint8Array(10);
-					}
-				}
+					},
+				},
 			});
 			return false; // Should have thrown
 		} catch (e) {
-			if (!e.message.includes('output_format must be')) return false;
+			if (!e.message.includes("output_format must be")) return false;
 		}
 
 		return true;
@@ -337,7 +339,7 @@ test("raw.encode - various symbol_alignment values", async () => {
 				num_repair_symbols: 5n,
 				num_source_blocks: 1n,
 				num_sub_blocks: 1n,
-				symbol_alignment: alignment
+				symbol_alignment: alignment,
 			};
 
 			const result = raw.encode({ options: config, data: testData });
@@ -354,7 +356,6 @@ test("raw.encode - various symbol_alignment values", async () => {
 			if (firstSymbol.done) {
 				return false; // Should have at least one symbol
 			}
-
 		} catch (error) {
 			console.error(`Symbol alignment ${alignment} failed:`, error);
 			return false;
@@ -375,7 +376,7 @@ test("suppa.encode/decode - strategy.encoding_packet.sbn default", async () => {
 		const encoded = suppa.encode({
 			options: { symbol_size: 104n },
 			data: test_data,
-			strategy: {} // Use all defaults
+			strategy: {}, // Use all defaults
 		});
 
 		const oti = await encoded.oti;
@@ -390,14 +391,14 @@ test("suppa.encode/decode - strategy.encoding_packet.sbn default", async () => {
 				for (const symbol of symbols) {
 					yield symbol;
 				}
-			}
+			},
 		};
 
 		// Decode with default strategy
 		const decoded = await suppa.decode({
 			oti: oti,
 			encoding_packets: symbol_iterator,
-			strategy: {} // Use all defaults
+			strategy: {}, // Use all defaults
 		});
 
 		return arraysEqual(test_data, decoded);
@@ -452,7 +453,7 @@ test("suppa.encode/decode - strategy.encoding_packet.sbn custom remap", async ()
 				for (const symbol of symbols) {
 					yield symbol;
 				}
-			}
+			},
 		};
 
 		// Decode with same strategy
@@ -512,7 +513,7 @@ test("suppa.encode/decode - strategy.encoding_packet.sbn disabled", async () => 
 				for (const symbol of symbols) {
 					yield symbol;
 				}
-			}
+			},
 		};
 
 		// Decode with same strategy
@@ -571,7 +572,7 @@ test("suppa.encode/decode - strategy.encoding_packet.esi custom bits", async () 
 				for (const symbol of symbols) {
 					yield symbol;
 				}
-			}
+			},
 		};
 
 		// Decode with same strategy
@@ -633,7 +634,7 @@ test("suppa.encode/decode - both sbn and esi customized", async () => {
 			// Verify SBN value is remapped correctly (should be 7)
 			// With bit packing, SBN is in the first 4 bits of the packed header
 			const packed_header = (symbol[0] << 8) | symbol[1]; // Get first 2 bytes as 16-bit value
-			const sbn_value = (packed_header >> 12) & 0x0F; // Extract upper 4 bits
+			const sbn_value = (packed_header >> 12) & 0x0f; // Extract upper 4 bits
 			if (sbn_value !== 7) {
 				console.error(`Expected SBN to be 7, got ${sbn_value}`);
 				return false;
@@ -646,7 +647,7 @@ test("suppa.encode/decode - both sbn and esi customized", async () => {
 				for (const symbol of symbols) {
 					yield symbol;
 				}
-			}
+			},
 		};
 
 		// Decode with same strategy
@@ -770,7 +771,6 @@ test("suppa.encode/decode - strategy.oti custom bits", async () => {
 		});
 
 		return arraysEqual(decoded, test_data);
-
 	} catch (error) {
 		console.error("OTI custom bits test error:", error);
 		return false;
@@ -869,7 +869,6 @@ test("suppa.encode/decode - strategy.oti hardcoded values", async () => {
 		});
 
 		return arraysEqual(decoded, test_data);
-
 	} catch (error) {
 		console.error("OTI hardcoded values test error:", error);
 		return false;
@@ -933,7 +932,6 @@ test("suppa.encode/decode - strategy.oti custom remap", async () => {
 		});
 
 		return arraysEqual(decoded, test_data);
-
 	} catch (error) {
 		console.error("OTI custom remap test error:", error);
 		return false;
@@ -983,13 +981,15 @@ test("suppa - to_external can return undefined for non-representable values", as
 				if (++count >= 3) break; // We might get an error before this
 			}
 		} catch (error) {
-			if (error.message.includes("cannot be represented externally") && error.message.includes("to_external returned undefined")) {
+			if (
+				error.message.includes("cannot be represented externally") &&
+				error.message.includes("to_external returned undefined")
+			) {
 				error_thrown = true;
 			}
 		}
 
 		return error_thrown;
-
 	} catch (error) {
 		// The error should be caught above, if we get here it's unexpected
 		console.error("Unexpected error in to_external undefined test:", error);
@@ -1060,20 +1060,21 @@ test("suppa - external_bits=0 for SBN removes SBN prefix from packets", async ()
 		// The difference should be exactly 1 byte per packet (the SBN byte)
 		for (let i = 0; i < Math.min(packets_with_sbn.length, packets_no_sbn.length); i++) {
 			if (packets_with_sbn[i].length !== packets_no_sbn[i].length + 1) {
-				console.log(`Packet ${i}: with SBN=${packets_with_sbn[i].length}, without SBN=${packets_no_sbn[i].length}`);
+				console.log(
+					`Packet ${i}: with SBN=${packets_with_sbn[i].length}, without SBN=${packets_no_sbn[i].length}`,
+				);
 				return false;
 			}
 		}
 
 		return true;
-
 	} catch (error) {
 		console.error("external_bits=0 SBN test error:", error);
 		return false;
 	}
 });
 
-// Test external_bits=0 for ESI strategy  
+// Test external_bits=0 for ESI strategy
 test("suppa - external_bits=0 for ESI removes ESI prefix from packets", async () => {
 	try {
 		const test_data = createTestData(100);
@@ -1134,7 +1135,6 @@ test("suppa - external_bits=0 for ESI removes ESI prefix from packets", async ()
 			for await (const packet of encoded_small_esi.encoding_packets) {
 				if (++count >= 3) break;
 			}
-
 		} catch (error) {
 			if (error.message.includes("cannot be represented externally")) {
 				small_esi_failed_as_expected = true;
@@ -1152,7 +1152,6 @@ test("suppa - external_bits=0 for ESI removes ESI prefix from packets", async ()
 		// Test passes if we got packets from normal strategy
 		// The small ESI might work or fail depending on the data size - both outcomes are valid
 		return count >= 3;
-
 	} catch (error) {
 		console.error("ESI bits test error:", error);
 		return false;
@@ -1254,7 +1253,6 @@ test("suppa - external_bits=0 round-trip with undefined OTI", async () => {
 		const decoded_data = await decoded_result;
 
 		return arraysEqual(decoded_data, test_data);
-
 	} catch (error) {
 		console.error("external_bits=0 round-trip test error:", error);
 		return false;
@@ -1297,7 +1295,7 @@ test("suppa.encode/decode - oti.placement negotiation (default)", async () => {
 				for (const symbol of symbols) {
 					yield symbol;
 				}
-			}
+			},
 		};
 
 		// Decode with same strategy
@@ -1361,7 +1359,7 @@ test("suppa.encode/decode - oti.placement encoding_packet", async () => {
 				for (const symbol of symbols) {
 					yield symbol;
 				}
-			}
+			},
 		};
 
 		// Decode with same strategy, passing undefined for oti
@@ -1398,7 +1396,11 @@ test("suppa.encode - oti.placement validation", async () => {
 			});
 			return false; // Should have thrown
 		} catch (e) {
-			if (!e.message.includes('Provided strategy.oti.placement (invalid_value) must be "negotiation" or "encoding_packet"')) {
+			if (
+				!e.message.includes(
+					'Provided strategy.oti.placement (invalid_value) must be "negotiation" or "encoding_packet"',
+				)
+			) {
 				console.error("Expected placement validation error, got:", e.message);
 				return false;
 			}
@@ -1426,7 +1428,7 @@ test("suppa.decode - oti validation with encoding_packet placement", async () =>
 		const mock_packets = {
 			async *[Symbol.asyncIterator]() {
 				yield new Uint8Array(108); // Mock packet
-			}
+			},
 		};
 
 		// This should throw an error
@@ -1438,7 +1440,11 @@ test("suppa.decode - oti validation with encoding_packet placement", async () =>
 			});
 			return false; // Should have thrown
 		} catch (e) {
-			if (!e.message.includes("When strategy.oti.placement is 'encoding_packet', the oti parameter must be undefined")) {
+			if (
+				!e.message.includes(
+					"When strategy.oti.placement is 'encoding_packet', the oti parameter must be undefined",
+				)
+			) {
 				console.error("Expected OTI validation error, got:", e.message);
 				return false;
 			}
@@ -1522,7 +1528,8 @@ test("suppa.encode/decode - minimal OTI with encoding_packet placement", async (
 			symbols.push(symbol);
 			// With all OTI hardcoded, packets should be same size as standard
 			// (no OTI overhead since nothing to embed)
-			if (symbol.length !== 108) { // SBN + ESI + symbol_data
+			if (symbol.length !== 108) {
+				// SBN + ESI + symbol_data
 				console.error(`Expected standard packet size 108, got ${symbol.length}`);
 				return false;
 			}
@@ -1534,7 +1541,7 @@ test("suppa.encode/decode - minimal OTI with encoding_packet placement", async (
 				for (const symbol of symbols) {
 					yield symbol;
 				}
-			}
+			},
 		};
 
 		// Decode with same strategy
@@ -1577,7 +1584,7 @@ test("suppa.decode - OTI consistency validation in encoding_packet placement", a
 				packet2[0] = 0;
 				packet2[1] = 200; // Different value!
 				yield packet2;
-			}
+			},
 		};
 
 		// This should throw an error due to OTI mismatch
@@ -1622,7 +1629,7 @@ test("suppa.encode/decode - transfer_length_trim basic functionality", async () 
 		const encode_result = suppa.encode({
 			strategy,
 			data: test_data,
-			options: { symbol_size: 64n }
+			options: { symbol_size: 64n },
 		});
 
 		const oti = await encode_result.oti;
@@ -1642,7 +1649,7 @@ test("suppa.encode/decode - transfer_length_trim basic functionality", async () 
 				for (const packet of encoding_packets) {
 					yield packet;
 				}
-			})()
+			})(),
 		});
 
 		const decoded_data = await decode_result;
@@ -1689,11 +1696,12 @@ test("suppa.encode/decode - transfer_length_trim with blocks output", async () =
 				transfer_length_trim: {
 					external_bits: 8n, // we compress this down to 8 bits by making the trim only refer to the lower 8 bits, as `transfer_length` already covers the remaining bits (well, with a value 256 larger)
 					remap: {
-						to_internal: (external_value, { transfer_length }) => (transfer_length - 256n) + external_value,
-						to_external: (internal_value, { transfer_length }) => internal_value - (transfer_length - 256n)
+						to_internal: (external_value, { transfer_length }) => transfer_length - 256n + external_value,
+						to_external: (internal_value, { transfer_length }) => internal_value - (transfer_length - 256n),
 					},
 					// this function decides what internal transfer_length raptorq will use based on effective_transfer_length := the length of the data passed in to this interface + the size transfer_length_trim takes up, must return value >= effective_transfer_length
-					pump_transfer_length: (effective_transfer_length) => bigint_ceil(effective_transfer_length, 256n) * 256n, // bring up to nearest 256 multiple
+					pump_transfer_length: (effective_transfer_length) =>
+						bigint_ceil(effective_transfer_length, 256n) * 256n, // bring up to nearest 256 multiple
 				},
 			},
 		};
@@ -1702,7 +1710,7 @@ test("suppa.encode/decode - transfer_length_trim with blocks output", async () =
 		const encode_result = suppa.encode({
 			strategy,
 			data: test_data,
-			options: { symbol_size: 256n, num_source_blocks: 2n } // Use 256 to match the strategy
+			options: { symbol_size: 256n, num_source_blocks: 2n }, // Use 256 to match the strategy
 		});
 
 		const oti = await encode_result.oti;
@@ -1712,7 +1720,7 @@ test("suppa.encode/decode - transfer_length_trim with blocks output", async () =
 			encoding_packets.push(packet);
 		}
 
-		console.log("HAVE ENCODING PACKETS:")
+		console.log("HAVE ENCODING PACKETS:");
 		// console.log(encoding_packets);
 
 		// Decode with blocks output format
@@ -1724,12 +1732,14 @@ test("suppa.encode/decode - transfer_length_trim with blocks output", async () =
 				for (const packet of encoding_packets) {
 					yield packet;
 				}
-			})()
+			})(),
 		});
 
 		const blocks = [];
 		for await (const block of decode_result.blocks) {
-			console.log(`Block ${block.sbn}: length=${block.data.length}, first few bytes=[${block.data.slice(0, 10).join(",")}]`);
+			console.log(
+				`Block ${block.sbn}: length=${block.data.length}, first few bytes=[${block.data.slice(0, 10).join(",")}]`,
+			);
 			blocks.push(block);
 		}
 
@@ -1740,7 +1750,9 @@ test("suppa.encode/decode - transfer_length_trim with blocks output", async () =
 		// Reconstruct data from blocks
 		let reconstructed_data = new Uint8Array(0);
 		for (const block of blocks.sort((a, b) => Number(a.sbn - b.sbn))) {
-			console.log(`Assembling block ${block.sbn}, current length: ${reconstructed_data.length}, adding: ${block.data.length}`);
+			console.log(
+				`Assembling block ${block.sbn}, current length: ${reconstructed_data.length}, adding: ${block.data.length}`,
+			);
 			const combined = new Uint8Array(reconstructed_data.length + block.data.length);
 			combined.set(reconstructed_data);
 			combined.set(block.data, reconstructed_data.length);
@@ -1797,11 +1809,12 @@ test("suppa.encode/decode - transfer_length_trim with remap functions", async ()
 				transfer_length_trim: {
 					external_bits: 8n, // we compress this down to 8 bits by making the trim only refer to the lower 8 bits, as `transfer_length` already covers the remaining bits (well, with a value 256 larger)
 					remap: {
-						to_internal: (external_value, { transfer_length }) => (transfer_length - 256n) + external_value,
-						to_external: (internal_value, { transfer_length }) => internal_value - (transfer_length - 256n)
+						to_internal: (external_value, { transfer_length }) => transfer_length - 256n + external_value,
+						to_external: (internal_value, { transfer_length }) => internal_value - (transfer_length - 256n),
 					},
 					// this function decides what internal transfer_length raptorq will use based on effective_transfer_length := the length of the data passed in to this interface + the size transfer_length_trim takes up, must return value >= effective_transfer_length
-					pump_transfer_length: (effective_transfer_length) => bigint_ceil(effective_transfer_length, 256n) * 256n, // bring up to nearest 256 multiple
+					pump_transfer_length: (effective_transfer_length) =>
+						bigint_ceil(effective_transfer_length, 256n) * 256n, // bring up to nearest 256 multiple
 				},
 			},
 		};
@@ -1810,7 +1823,7 @@ test("suppa.encode/decode - transfer_length_trim with remap functions", async ()
 		const encode_result = suppa.encode({
 			strategy,
 			data: test_data,
-			options: { symbol_size: 256n } // Use 256 to match the strategy
+			options: { symbol_size: 256n }, // Use 256 to match the strategy
 		});
 
 		const oti = await encode_result.oti;
@@ -1832,7 +1845,7 @@ test("suppa.encode/decode - transfer_length_trim with remap functions", async ()
 				for (const packet of encoding_packets) {
 					yield packet;
 				}
-			})()
+			})(),
 		});
 
 		const decoded_data = await decode_result;
@@ -1868,7 +1881,7 @@ test("suppa.encode/decode - transfer_length_trim disabled with zero external_bit
 		const encode_result = suppa.encode({
 			strategy,
 			data: test_data,
-			options: { symbol_size: 40n }
+			options: { symbol_size: 40n },
 		});
 
 		const oti = await encode_result.oti;
@@ -1888,7 +1901,7 @@ test("suppa.encode/decode - transfer_length_trim disabled with zero external_bit
 				for (const packet of encoding_packets) {
 					yield packet;
 				}
-			})()
+			})(),
 		});
 
 		const decoded_data = await decode_result;
@@ -1926,7 +1939,7 @@ test("suppa.decode - transfer_length_trim error handling", async () => {
 		const encode_result = suppa.encode({
 			strategy,
 			data: test_data,
-			options: { symbol_size: 32n }
+			options: { symbol_size: 32n },
 		});
 
 		const oti = await encode_result.oti;
@@ -1944,7 +1957,7 @@ test("suppa.decode - transfer_length_trim error handling", async () => {
 					remap: {
 						// This remap will make the trim length larger than available data
 						to_internal: (external_value, { transfer_length }) => external_value + 200n, // Add way too much
-						to_external: (internal_value, { transfer_length }) => internal_value - 200n
+						to_external: (internal_value, { transfer_length }) => internal_value - 200n,
 					},
 					pump_transfer_length: (effective_length) => effective_length + 10n,
 				},
@@ -1959,7 +1972,7 @@ test("suppa.decode - transfer_length_trim error handling", async () => {
 					for (const packet of encoding_packets) {
 						yield packet;
 					}
-				})()
+				})(),
 			});
 
 			const decoded_data = await decode_result;
@@ -1990,9 +2003,9 @@ test("raw decode - regular output format with multiple blocks", async () => {
 			options: {
 				symbol_size: 48n,
 				num_repair_symbols: 5n,
-				num_source_blocks: 2n  // Use 2 blocks to test multi-block scenario
+				num_source_blocks: 2n, // Use 2 blocks to test multi-block scenario
 			},
-			data: originalData
+			data: originalData,
 		});
 
 		// Collect the encoded data
@@ -2008,13 +2021,13 @@ test("raw decode - regular output format with multiple blocks", async () => {
 				for (const symbol of symbols) {
 					yield symbol;
 				}
-			}
+			},
 		};
 
 		// Decode with regular format (default)
 		const decoded = raw.decode({
 			oti,
-			encoding_packets: symbolIterator
+			encoding_packets: symbolIterator,
 		});
 
 		// Verify result has data Uint8Array
@@ -2029,7 +2042,6 @@ test("raw decode - regular output format with multiple blocks", async () => {
 		}
 
 		return true;
-
 	} catch (error) {
 		console.error("Regular decoding test error:", error);
 		return false;
@@ -2044,7 +2056,7 @@ test("raw.encode - rejects regular numbers, requires BigInt", async () => {
 		// This should fail because 800 is not 800n
 		const result = raw.encode({
 			options: { symbol_size: 800 }, // Regular number should be rejected
-			data: testData
+			data: testData,
 		});
 		// If we get here, validation failed
 		return false;
@@ -2074,7 +2086,7 @@ test("raw.encode - strict BigInt validation for all options", async () => {
 		try {
 			const result = raw.encode({
 				options: test.options,
-				data: testData
+				data: testData,
 			});
 			// If we get here, validation failed
 			console.error(`${test.field} validation failed - should have rejected regular number`);
@@ -2128,7 +2140,7 @@ test("raw.decode - early bailout with sufficient packets", async () => {
 				for (const symbol of minimum_symbols) {
 					yield symbol;
 				}
-			})()
+			})(),
 		});
 
 		const decoded_data_1 = await decode_result_1;
@@ -2150,13 +2162,13 @@ test("raw.decode - early bailout with sufficient packets", async () => {
 					yield symbol;
 
 					// Add small delay to make timing more observable
-					await new Promise(resolve => setTimeout(resolve, 1));
+					await new Promise((resolve) => setTimeout(resolve, 1));
 				}
-			})()
+			})(),
 		});
 
 		// Start decoding and track when it completes
-		const decode_promise = decode_result_2.then(result => {
+		const decode_promise = decode_result_2.then((result) => {
 			decode_completed = true;
 			return result;
 		});
@@ -2174,7 +2186,6 @@ test("raw.decode - early bailout with sufficient packets", async () => {
 		console.log(`Decode completed: ${decode_completed}`);
 
 		return true;
-
 	} catch (error) {
 		console.error("Raw early bailout test error:", error);
 		return false;
@@ -2217,9 +2228,9 @@ test("raw.decode - early bailout with repair symbols first", async () => {
 					yield symbol;
 
 					// Small delay to make consumption observable
-					await new Promise(resolve => setTimeout(resolve, 2));
+					await new Promise((resolve) => setTimeout(resolve, 2));
 				}
-			})()
+			})(),
 		});
 
 		const decoded_data = await decode_result;
@@ -2232,13 +2243,11 @@ test("raw.decode - early bailout with repair symbols first", async () => {
 		console.log(`Mixed order test fed ${symbols_fed} symbols`);
 
 		return true;
-
 	} catch (error) {
 		console.error("Mixed order bailout test error:", error);
 		return false;
 	}
 });
-
 
 // Test that suppa decoder bails out as soon as enough packets are received
 test("suppa.decode - early bailout with sufficient packets", async () => {
@@ -2279,7 +2288,7 @@ test("suppa.decode - early bailout with sufficient packets", async () => {
 				for (const symbol of minimum_symbols) {
 					yield symbol;
 				}
-			})()
+			})(),
 		});
 
 		if (!arraysEqual(test_data, decoded_data_1)) {
@@ -2289,7 +2298,7 @@ test("suppa.decode - early bailout with sufficient packets", async () => {
 
 		// Test 2: Verify decoder efficiency with partial symbol stream
 		let symbols_processed = 0;
-		let early_completion_detected = false;
+		const early_completion_detected = false;
 
 		// Create a controlled symbol feeder that tracks consumption
 		const controlled_symbol_iterator = {
@@ -2303,7 +2312,7 @@ test("suppa.decode - early bailout with sufficient packets", async () => {
 					// After yielding minimum + 1 symbols, check if we can detect completion soon
 					if (symbols_processed === expected_source_symbols + 1) {
 						// Add a small delay and see if the decoder is still requesting more
-						await new Promise(resolve => setTimeout(resolve, 10));
+						await new Promise((resolve) => setTimeout(resolve, 10));
 					}
 
 					// Don't yield more than minimum + 2 to avoid unnecessary processing
@@ -2312,13 +2321,13 @@ test("suppa.decode - early bailout with sufficient packets", async () => {
 						break;
 					}
 				}
-			}
+			},
 		};
 
 		const decoded_data_2 = await suppa.decode({
 			oti,
 			strategy,
-			encoding_packets: controlled_symbol_iterator
+			encoding_packets: controlled_symbol_iterator,
 		});
 
 		if (!arraysEqual(test_data, decoded_data_2)) {
@@ -2330,15 +2339,12 @@ test("suppa.decode - early bailout with sufficient packets", async () => {
 		console.log(`Suppa symbols processed: ${symbols_processed}, Total available: ${all_symbols.length}`);
 
 		// Should have processed at least minimum but not all symbols
-		const processing_efficient = (0n
-			&& symbols_processed >= expected_source_symbols
-			&& symbols_processed < all_symbols.length
-		);
+		const processing_efficient =
+			0n && symbols_processed >= expected_source_symbols && symbols_processed < all_symbols.length;
 
 		console.log(`Suppa processing efficient: ${processing_efficient}`);
 
 		return true;
-
 	} catch (error) {
 		console.error("Suppa early bailout test error:", error);
 		return false;
@@ -2358,7 +2364,7 @@ const crc8 = (data) => {
 			}
 		}
 	}
-	return crc & 0xFFn;
+	return crc & 0xffn;
 };
 
 // Test basic ECC functionality
@@ -2400,7 +2406,6 @@ test("suppa.ecc - basic ECC encoding/decoding", async () => {
 
 		// Compare results
 		return arraysEqual(test_data, decode_result);
-
 	} catch (error) {
 		console.error("Basic ECC test failed:", error);
 		return false;
@@ -2456,7 +2461,6 @@ test("suppa.ecc - corruption detection", async () => {
 		}
 
 		return false;
-
 	} catch (error) {
 		console.error("ECC corruption test failed:", error);
 		return false;
@@ -2511,7 +2515,6 @@ test("suppa.ecc - per-packet OTI with ECC", async () => {
 
 		// Compare results
 		return arraysEqual(test_data, decode_result);
-
 	} catch (error) {
 		console.error("Per-packet OTI with ECC test failed:", error);
 		return false;
@@ -2524,10 +2527,7 @@ test("suppa.ecc - corrupt every 2nd packet with sufficient repair symbols", asyn
 	const test_data_size = 5000;
 	const test_data = new Uint8Array(test_data_size);
 	for (let i = 0; i < test_data_size; i++) {
-		test_data[i] = (i
-			* 37
-			+ 13
-		) % 256; // Create some pattern for testing
+		test_data[i] = (i * 37 + 13) % 256; // Create some pattern for testing
 	}
 
 	const strategy_with_ecc = {
@@ -2548,7 +2548,7 @@ test("suppa.ecc - corrupt every 2nd packet with sufficient repair symbols", asyn
 				symbol_size: 100n,
 				symbol_alignment: 1n,
 				num_repair_symbols: 100n, // Generate plenty of repair symbols to handle corruption
-			}
+			},
 		});
 
 		// Collect all packets - we need enough to handle 50% corruption
@@ -2561,13 +2561,15 @@ test("suppa.ecc - corrupt every 2nd packet with sufficient repair symbols", asyn
 
 		// Corrupt every 2nd packet by flipping bits in the ECC header
 		const packets_with_corruption = all_packets.map((packet, index) => {
-			if (false
-				|| index % 2 !== 0
+			if (
+				false ||
+				index % 2 !== 0
 				// || index % 2 === 0
 				// uncomment above to test that test  fails properly
-			) { // Corrupt every 2nd packet (indices 1, 3, 5, ...)
+			) {
+				// Corrupt every 2nd packet (indices 1, 3, 5, ...)
 				const corrupted = new Uint8Array(packet);
-				corrupted[0] ^= 0xFF; // Flip all bits in first byte of ECC header
+				corrupted[0] ^= 0xff; // Flip all bits in first byte of ECC header
 				return corrupted;
 			}
 			return packet;
@@ -2588,10 +2590,11 @@ test("suppa.ecc - corrupt every 2nd packet with sufficient repair symbols", asyn
 
 		// Verify the decoded data matches original
 		const matches = arraysEqual(test_data, decode_result);
-		console.log(`Large data corruption test - data matches: ${matches}, original size: ${test_data.length}, decoded size: ${decode_result.length}`);
+		console.log(
+			`Large data corruption test - data matches: ${matches}, original size: ${test_data.length}, decoded size: ${decode_result.length}`,
+		);
 
 		return matches;
-
 	} catch (error) {
 		console.error("Large data corruption test failed:", error);
 		return false;

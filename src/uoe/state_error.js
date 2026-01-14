@@ -7,7 +7,7 @@ export const state_error = (name, message, cause) => {
 	if (name === "not_found") {
 		return state_not_found_error(name, message, cause);
 	}
-	
+
 	return {
 		status: "error",
 		error_type: "state_error",
@@ -18,7 +18,7 @@ export const state_error = (name, message, cause) => {
 		...(cause && {
 			cause,
 		}),
-	}
+	};
 };
 
 export const stateError = state_error;

@@ -1,12 +1,12 @@
-import { throw_error } from "../uoe/throw_error.js";
-import { error_user_payload } from "../uoe/error_user_payload.js";
-import Uint1Array from "../Uint1Array.js";
 import { create_unsuspended_promise, unsuspended_promise } from "unsuspended-promise";
-import { bigint_ceil } from "../uoe/bigint_ceil.js";
 import { oti_decode as oti_decode_raw } from "../raptorq_raw/oti_decode.js";
 import { oti_encode as oti_encode_raw } from "../raptorq_raw/oti_encode.js";
-import { oti_decode } from "./oti_decode.js";
+import Uint1Array from "../Uint1Array.js";
+import { bigint_ceil } from "../uoe/bigint_ceil.js";
+import { error_user_payload } from "../uoe/error_user_payload.js";
+import { throw_error } from "../uoe/throw_error.js";
 import { exact_strategy } from "./exact_strategy.js";
+import { oti_decode } from "./oti_decode.js";
 import { packet_header_decode } from "./packet_header_decode.js";
 
 // Safe wrapper functions that validate transformations
@@ -22,12 +22,12 @@ const create_safe_wrappers = (remap, external_bits, max_internal_bits) => {
 	const to_internal_safe = (external_value) => {
 		const internal_value = remap.to_internal(external_value);
 
-		if (false
-			|| typeof internal_value !== "bigint"
-			|| internal_value < 0n
-			|| internal_value > max_internal_value
-		) {
-			throw_error(error_user_payload(`to_internal returned invalid value ${internal_value}. Must be bigint between 0n and ${max_internal_value}.`));
+		if (false || typeof internal_value !== "bigint" || internal_value < 0n || internal_value > max_internal_value) {
+			throw_error(
+				error_user_payload(
+					`to_internal returned invalid value ${internal_value}. Must be bigint between 0n and ${max_internal_value}.`,
+				),
+			);
 		}
 
 		// Double-check round-trip consistency (only if external_bits > 0n)
@@ -35,11 +35,19 @@ const create_safe_wrappers = (remap, external_bits, max_internal_bits) => {
 			const round_trip_external = remap.to_external(internal_value);
 
 			if (round_trip_external === undefined) {
-				throw_error(error_user_payload(`Internal value ${internal_value} cannot be represented externally (to_external returned undefined).`));
+				throw_error(
+					error_user_payload(
+						`Internal value ${internal_value} cannot be represented externally (to_external returned undefined).`,
+					),
+				);
 			}
 
 			if (round_trip_external !== external_value) {
-				throw_error(error_user_payload(`to_internal / to_external are not consistent.${external_value} -> ${internal_value} -> ${round_trip_external}`));
+				throw_error(
+					error_user_payload(
+						`to_internal / to_external are not consistent.${external_value} -> ${internal_value} -> ${round_trip_external}`,
+					),
+				);
 			}
 		}
 
@@ -55,21 +63,29 @@ const create_safe_wrappers = (remap, external_bits, max_internal_bits) => {
 
 		// Allow to_external to return undefined to indicate non-representable values
 		if (external_value === undefined) {
-			throw_error(error_user_payload(`Internal value ${internal_value} cannot be represented externally(to_external returned undefined).`));
+			throw_error(
+				error_user_payload(
+					`Internal value ${internal_value} cannot be represented externally(to_external returned undefined).`,
+				),
+			);
 		}
 
-		if (false
-			|| typeof external_value !== "bigint"
-			|| external_value < 0n
-			|| external_value > max_external_value
-		) {
-			throw_error(error_user_payload(`to_external returned invalid value ${external_value}.Must be bigint between 0n and ${max_external_value}.`));
+		if (false || typeof external_value !== "bigint" || external_value < 0n || external_value > max_external_value) {
+			throw_error(
+				error_user_payload(
+					`to_external returned invalid value ${external_value}.Must be bigint between 0n and ${max_external_value}.`,
+				),
+			);
 		}
 
 		// Double-check round-trip consistency
 		const round_trip_internal = remap.to_internal(external_value);
 		if (round_trip_internal !== internal_value) {
-			throw_error(error_user_payload(`to_internal / to_external are not consistent.${internal_value} -> ${external_value} -> ${round_trip_internal}`));
+			throw_error(
+				error_user_payload(
+					`to_internal / to_external are not consistent.${internal_value} -> ${external_value} -> ${round_trip_internal}`,
+				),
+			);
 		}
 
 		return external_value;
@@ -95,7 +111,6 @@ const create_process_oti = (strategy) => {
 	};
 };
 
-
 export const _decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strategy }) => {
 	strategy ??= {};
 
@@ -103,10 +118,18 @@ export const _decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strateg
 	strategy = exact_strategy(strategy);
 
 	// Create safe wrappers for SBN (8 bits is the default max for internal SBN)
-	const sbn_wrappers = create_safe_wrappers(strategy.encoding_packet.sbn.remap, strategy.encoding_packet.sbn.external_bits, 8n);
+	const sbn_wrappers = create_safe_wrappers(
+		strategy.encoding_packet.sbn.remap,
+		strategy.encoding_packet.sbn.external_bits,
+		8n,
+	);
 
 	// Create safe wrappers for ESI (24 bits is the default max for internal ESI)
-	const esi_wrappers = create_safe_wrappers(strategy.encoding_packet.esi.remap, strategy.encoding_packet.esi.external_bits, 24n);
+	const esi_wrappers = create_safe_wrappers(
+		strategy.encoding_packet.esi.remap,
+		strategy.encoding_packet.esi.external_bits,
+		24n,
+	);
 
 	// Create the process_oti function using the factory
 	const process_oti = create_process_oti(strategy);
@@ -119,7 +142,7 @@ export const _decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strateg
 			for await (const packet of encoding_packets) {
 				// Decode and verify packet header using utility function
 				const header_result = packet_header_decode(strategy, packet);
-				
+
 				if (!header_result.valid) {
 					// Silently drop invalid packet (ECC mismatch or other issues)
 					continue;
@@ -137,19 +160,19 @@ export const _decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strateg
 
 				// Convert internal ESI to 3-byte format
 				const internal_esi_bytes = new Uint8Array(3);
-				internal_esi_bytes[0] = Number((internal_esi >> 16n) & 0xFFn);
-				internal_esi_bytes[1] = Number((internal_esi >> 8n) & 0xFFn);
-				internal_esi_bytes[2] = Number(internal_esi & 0xFFn);
+				internal_esi_bytes[0] = Number((internal_esi >> 16n) & 0xffn);
+				internal_esi_bytes[1] = Number((internal_esi >> 8n) & 0xffn);
+				internal_esi_bytes[2] = Number(internal_esi & 0xffn);
 
 				// Reconstruct packet in raw format: SBN (1 byte) + internal ESI (3 bytes) + symbol data
 				const transformed_packet = new Uint8Array(1 + 3 + symbol_data.length);
-				transformed_packet[0] = Number(internal_sbn & 0xFFn); // Convert to single byte
+				transformed_packet[0] = Number(internal_sbn & 0xffn); // Convert to single byte
 				transformed_packet.set(internal_esi_bytes, 1);
 				transformed_packet.set(symbol_data, 4);
 
 				yield transformed_packet;
 			}
-		}
+		},
 	};
 
 	return raptorq_raw.decode({ usage, oti: processed_oti, encoding_packets: transformed_encoding_packets });
@@ -173,14 +196,14 @@ const calculate_header_size = (strategy) => {
 			symbol_alignment: { external_bits: 8n, ...strategy.oti.symbol_alignment },
 		};
 
-		const oti_total_bits = (0n
-			+ oti_config.transfer_length.external_bits
-			+ oti_config.fec_encoding_id.external_bits
-			+ oti_config.symbol_size.external_bits
-			+ oti_config.num_source_blocks.external_bits
-			+ oti_config.num_sub_blocks.external_bits
-			+ oti_config.symbol_alignment.external_bits
-		);
+		const oti_total_bits =
+			0n +
+			oti_config.transfer_length.external_bits +
+			oti_config.fec_encoding_id.external_bits +
+			oti_config.symbol_size.external_bits +
+			oti_config.num_source_blocks.external_bits +
+			oti_config.num_sub_blocks.external_bits +
+			oti_config.symbol_alignment.external_bits;
 
 		total_bits += oti_total_bits;
 	}
@@ -205,7 +228,11 @@ export const decode__ = ({ raptorq_raw }, { usage, oti, encoding_packets, strate
 	// Validate that oti is undefined when placement is "encoding_packet"
 	if (strategy.oti.placement === "encoding_packet") {
 		if (oti !== undefined) {
-			throw_error(error_user_payload("When strategy.oti.placement is 'encoding_packet', the oti parameter must be undefined"));
+			throw_error(
+				error_user_payload(
+					"When strategy.oti.placement is 'encoding_packet', the oti parameter must be undefined",
+				),
+			);
 		}
 
 		// For per-packet OTI, we need to extract OTI from the first valid packet
@@ -217,7 +244,7 @@ export const decode__ = ({ raptorq_raw }, { usage, oti, encoding_packets, strate
 			for await (const packet of encoding_packets) {
 				// Decode packet header to extract OTI (and verify ECC)
 				const header_result = packet_header_decode(strategy, packet);
-				
+
 				if (!header_result.valid) {
 					// Silently drop invalid packet
 					continue;
@@ -248,7 +275,11 @@ export const decode__ = ({ raptorq_raw }, { usage, oti, encoding_packets, strate
 						}
 
 						if (!oti_matches) {
-							throw_error(error_user_payload("OTI mismatch detected in encoding packets. All packets must have identical OTI when using per-packet placement."));
+							throw_error(
+								error_user_payload(
+									"OTI mismatch detected in encoding packets. All packets must have identical OTI when using per-packet placement.",
+								),
+							);
 						}
 					}
 				}
@@ -263,13 +294,13 @@ export const decode__ = ({ raptorq_raw }, { usage, oti, encoding_packets, strate
 
 				// Convert internal ESI to 3-byte format
 				const internal_esi_bytes = new Uint8Array(3);
-				internal_esi_bytes[0] = Number((internal_esi >> 16n) & 0xFFn);
-				internal_esi_bytes[1] = Number((internal_esi >> 8n) & 0xFFn);
-				internal_esi_bytes[2] = Number(internal_esi & 0xFFn);
+				internal_esi_bytes[0] = Number((internal_esi >> 16n) & 0xffn);
+				internal_esi_bytes[1] = Number((internal_esi >> 8n) & 0xffn);
+				internal_esi_bytes[2] = Number(internal_esi & 0xffn);
 
 				// Reconstruct packet in raw format: SBN (1 byte) + internal ESI (3 bytes) + symbol data
 				const transformed_packet = new Uint8Array(1 + 3 + header_result.symbol_data.length);
-				transformed_packet[0] = Number(internal_sbn & 0xFFn);
+				transformed_packet[0] = Number(internal_sbn & 0xffn);
 				transformed_packet.set(internal_esi_bytes, 1);
 				transformed_packet.set(header_result.symbol_data, 4);
 
@@ -278,10 +309,15 @@ export const decode__ = ({ raptorq_raw }, { usage, oti, encoding_packets, strate
 		})();
 
 		// Create the decode function that waits for OTI
-		const decode_with_extracted_oti = unsuspended_promise((async () => {
-			const final_oti = await oti_prom;
-			return _decode({ raptorq_raw }, { usage, oti: final_oti, encoding_packets: oti_extracting_packets, strategy });
-		})());
+		const decode_with_extracted_oti = unsuspended_promise(
+			(async () => {
+				const final_oti = await oti_prom;
+				return _decode(
+					{ raptorq_raw },
+					{ usage, oti: final_oti, encoding_packets: oti_extracting_packets, strategy },
+				);
+			})(),
+		);
 
 		// Return based on usage type
 		if (usage?.output_format === "blocks") {
@@ -324,7 +360,7 @@ export const decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strategy
 		// Extract the RaptorQ internal transfer_length from OTI first for remap context
 		let raptorq_transfer_length;
 		if (oti !== undefined) {
-			// Process OTI to extract transfer_length 
+			// Process OTI to extract transfer_length
 			const process_oti = create_process_oti(strategy);
 			const processed_oti = process_oti(oti);
 
@@ -336,7 +372,9 @@ export const decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strategy
 		} else {
 			// OTI is undefined, must extract from hardcoded strategy values
 			if (!strategy.oti.transfer_length?.remap?.to_internal) {
-				throw_error(error_user_payload("Cannot determine transfer_length for trim context when OTI is undefined"));
+				throw_error(
+					error_user_payload("Cannot determine transfer_length for trim context when OTI is undefined"),
+				);
 			}
 			raptorq_transfer_length = strategy.oti.transfer_length.remap.to_internal(undefined);
 		}
@@ -346,7 +384,8 @@ export const decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strategy
 
 		// Handle different output formats
 		if (usage?.output_format === "blocks") {
-			const [transfer_length_trim, transfer_length_trim_res, transfer_length_trim_rej] = create_unsuspended_promise();
+			const [transfer_length_trim, transfer_length_trim_res, transfer_length_trim_rej] =
+				create_unsuspended_promise();
 
 			// For blocks output, extract trim length and provide it as metadata
 			return {
@@ -358,7 +397,11 @@ export const decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strategy
 							if (!first_block_processed) {
 								// Extract trim length from the first block's prefix
 								if (block.data.length < external_bytes) {
-									transfer_length_trim_rej(error_user_payload(`First block too small to contain transfer_length_trim prefix. Expected at least ${external_bytes} bytes, got ${block.data.length}`));
+									transfer_length_trim_rej(
+										error_user_payload(
+											`First block too small to contain transfer_length_trim prefix. Expected at least ${external_bytes} bytes, got ${block.data.length}`,
+										),
+									);
 									return;
 								}
 
@@ -371,7 +414,10 @@ export const decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strategy
 								let final_trim_length = stored_length;
 								if (strategy.payload.transfer_length_trim.remap?.to_internal) {
 									// Use the actual RaptorQ transfer_length as context
-									final_trim_length = strategy.payload.transfer_length_trim.remap.to_internal(stored_length, { transfer_length: raptorq_transfer_length });
+									final_trim_length = strategy.payload.transfer_length_trim.remap.to_internal(
+										stored_length,
+										{ transfer_length: raptorq_transfer_length },
+									);
 								}
 
 								// Resolve the promise with the final trim length
@@ -389,13 +435,15 @@ export const decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strategy
 							// Pass through other blocks unchanged
 							yield {
 								sbn: block.sbn,
-								data: block.data
+								data: block.data,
 							};
 						}
 					}
 
 					if (!first_block_processed) {
-						transfer_length_trim_rej(error_user_payload("No blocks received to extract transfer_length_trim from"));
+						transfer_length_trim_rej(
+							error_user_payload("No blocks received to extract transfer_length_trim from"),
+						);
 					}
 				})(),
 				transfer_length_trim,
@@ -406,7 +454,11 @@ export const decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strategy
 				const decoded_data = await raw_result;
 
 				if (decoded_data.length < external_bytes) {
-					throw_error(error_user_payload(`Decoded data too small to contain transfer_length_trim prefix. Expected at least ${external_bytes} bytes, got ${decoded_data.length}`));
+					throw_error(
+						error_user_payload(
+							`Decoded data too small to contain transfer_length_trim prefix. Expected at least ${external_bytes} bytes, got ${decoded_data.length}`,
+						),
+					);
 				}
 
 				// Extract trim length from prefix
@@ -419,7 +471,9 @@ export const decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strategy
 				let final_trim_length = stored_length;
 				if (strategy.payload.transfer_length_trim.remap?.to_internal) {
 					// Use the actual RaptorQ transfer_length as context
-					final_trim_length = strategy.payload.transfer_length_trim.remap.to_internal(stored_length, { transfer_length: raptorq_transfer_length });
+					final_trim_length = strategy.payload.transfer_length_trim.remap.to_internal(stored_length, {
+						transfer_length: raptorq_transfer_length,
+					});
 				}
 
 				// Strip prefix and trim to specified length
@@ -427,7 +481,11 @@ export const decode = ({ raptorq_raw }, { usage, oti, encoding_packets, strategy
 
 				// Validate trim length
 				if (final_trim_length > BigInt(data_without_prefix.length)) {
-					throw_error(error_user_payload(`transfer_length_trim specifies length ${final_trim_length} but only ${data_without_prefix.length} bytes available after prefix`));
+					throw_error(
+						error_user_payload(
+							`transfer_length_trim specifies length ${final_trim_length} but only ${data_without_prefix.length} bytes available after prefix`,
+						),
+					);
 				}
 
 				return data_without_prefix.slice(0, Number(final_trim_length));

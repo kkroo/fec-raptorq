@@ -1,7 +1,7 @@
 import Uint1Array from "../Uint1Array.js";
 import { bigint_ceil } from "../uoe/bigint_ceil.js";
-import { packet_miniheader_decode } from "./packet_miniheader_decode.js";
 import { calculate_ecc } from "./calculate_ecc.js";
+import { packet_miniheader_decode } from "./packet_miniheader_decode.js";
 
 /**
  * Decode and verify full packet header (ECC + OTI + SBN + ESI)

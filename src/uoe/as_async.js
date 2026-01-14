@@ -1,6 +1,6 @@
 /**
  * @stability 4 - locked
- * 
+ *
  * Properly converts any function to an async function.
  */
 

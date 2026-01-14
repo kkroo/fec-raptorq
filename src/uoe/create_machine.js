@@ -12,15 +12,16 @@ class Machine {
 	}
 
 	async apply(payload) {
-		const result = await this._reduce({
-			accept: (state) => ([ACCEPT, state]),
-			reject: () => ([REJECT]),
-		}, state, payload);
+		const result = await this._reduce(
+			{
+				accept: (state) => [ACCEPT, state],
+				reject: () => [REJECT],
+			},
+			state,
+			payload,
+		);
 
-		if (false
-			|| !Array.isArray(result)
-			|| result.length === 0
-		) {
+		if (false || !Array.isArray(result) || result.length === 0) {
 			throw_error(user_payload_error("Reducer must return system.accept or system.reject"));
 		}
 
@@ -38,11 +39,11 @@ class Machine {
 
 /**
  * @stability 1 - experimental
- * 
+ *
  * Creates an immutable state machine.
- * 
+ *
  * To create a live instance, see `TODO:create_source`.
- * 
+ *
  * TODO: use uoe enums.
  */
 export const create_machine = create_sync_factory(Machine);

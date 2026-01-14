@@ -1,5 +1,5 @@
-import { test } from "./test.js";
 import { is_template_data } from "./is_template_data.js";
+import { test } from "./test.js";
 
 test("template data", () => {
 	const foo = (data) => is_template_data(data);
@@ -12,8 +12,5 @@ test("non-template data", () => {
 });
 
 test("syntactic beauty", () => {
-	return (true
-		&& is_template_data`foo` === true
-		&& is_template_data(`bar`) === false
-	);
+	return true && is_template_data`foo` === true && is_template_data(`bar`) === false;
 });

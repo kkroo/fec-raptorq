@@ -3,7 +3,7 @@ export const test = async (name, test) => {
 
 	try {
 		result = await test();
-	} catch(e) {
+	} catch (e) {
 		console.error(`💥 ${name}`);
 		console.error(e);
 	}

@@ -1,15 +1,15 @@
 /**
  * @stability 1 - experimental
- * 
+ *
  * Creates an async iterable that caches the results of an async iterator.
- * 
+ *
  * This allows for immediate re-iteration.
  */
 export const cached_async_iterable = (iterator) => {
-	let cache = [];
+	const cache = [];
 
 	return {
-		async *[Symbol.asyncIterator] () {
+		async *[Symbol.asyncIterator]() {
 			let i = 0;
 
 			while (true) {
@@ -29,7 +29,7 @@ export const cached_async_iterable = (iterator) => {
 
 				i++;
 			}
-		}
+		},
 	};
 };
 

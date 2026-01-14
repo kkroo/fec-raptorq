@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
-import { throw_error } from "../uoe/throw_error.js";
 import { error_user_payload } from "../uoe/error_user_payload.js";
+import { throw_error } from "../uoe/throw_error.js";
 import { exact_options } from "./exact_options.js";
 
 export const encode = ({ binary_path }, { options, data }) => {
@@ -15,16 +15,21 @@ export const encode = ({ binary_path }, { options, data }) => {
 	options = exact_options(options);
 
 	const args = [
-		'--encode',
-		'--symbol-size', options.symbol_size.toString(),
-		'--repair-symbols', options.num_repair_symbols.toString(),
-		'--source-blocks', options.num_source_blocks.toString(),
-		'--sub-blocks', options.num_sub_blocks.toString(),
-		'--symbol-alignment', options.symbol_alignment.toString()
+		"--encode",
+		"--symbol-size",
+		options.symbol_size.toString(),
+		"--repair-symbols",
+		options.num_repair_symbols.toString(),
+		"--source-blocks",
+		options.num_source_blocks.toString(),
+		"--sub-blocks",
+		options.num_sub_blocks.toString(),
+		"--symbol-alignment",
+		options.symbol_alignment.toString(),
 	];
 
 	const process = spawn(binary_path, args, {
-		stdio: ['pipe', 'pipe', 'pipe']
+		stdio: ["pipe", "pipe", "pipe"],
 	});
 
 	let oti_resolved = false;
@@ -74,16 +79,16 @@ export const encode = ({ binary_path }, { options, data }) => {
 					}
 				}
 			}
-		}
+		},
 	};
 
 	let received_bytes = 0;
-	let oti_buffer = [];
+	const oti_buffer = [];
 	const OTI_SIZE = 12;
 
 	const encoding_symbol_size = options.symbol_size + 4n; // PayloadId size is 4 bytes
 
-	process.stdout.on('data', (chunk) => {
+	process.stdout.on("data", (chunk) => {
 		if (!oti_resolved) {
 			// Accumulate data until we have the full OTI
 			oti_buffer.push(...chunk);
@@ -167,15 +172,15 @@ export const encode = ({ binary_path }, { options, data }) => {
 		}
 	});
 
-	process.stdout.on('end', () => {
+	process.stdout.on("end", () => {
 		symbol_resolver(null); // Signal end of stream
 	});
 
-	process.stderr.on('data', (chunk) => {
+	process.stderr.on("data", (chunk) => {
 		// RaptorQ writes status messages to stderr, not errors
 		// Only treat as error if the message looks like an actual error
 		const message = chunk.toString().trim();
-		if (message.toLowerCase().includes('error') || message.toLowerCase().includes('failed')) {
+		if (message.toLowerCase().includes("error") || message.toLowerCase().includes("failed")) {
 			const error = new Error(`RaptorQ encoding error: ${message}`);
 			if (!oti_resolved) {
 				oti_rejector(error);
@@ -185,7 +190,7 @@ export const encode = ({ binary_path }, { options, data }) => {
 		// Otherwise ignore status messages
 	});
 
-	process.on('error', (error) => {
+	process.on("error", (error) => {
 		const wrapped_error = new Error(`Failed to spawn RaptorQ process: ${error.message}`);
 		if (!oti_resolved) {
 			oti_rejector(wrapped_error);
@@ -193,7 +198,7 @@ export const encode = ({ binary_path }, { options, data }) => {
 		symbol_rejector(wrapped_error);
 	});
 
-	process.on('close', (code) => {
+	process.on("close", (code) => {
 		if (code !== 0) {
 			const error = new Error(`RaptorQ process exited with code ${code}`);
 			if (!oti_resolved) {
@@ -212,6 +217,6 @@ export const encode = ({ binary_path }, { options, data }) => {
 
 	return {
 		oti: oti_promise,
-		encoding_packets: symbols
+		encoding_packets: symbols,
 	};
 };

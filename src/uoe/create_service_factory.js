@@ -8,7 +8,7 @@ import { unsuspended_factory } from "./unsuspended_factory.js";
 export const create_service_factory = (cls) => {
 	return unsuspended_factory(async (...args) => {
 		const obj = new cls(...args);
-		obj._init && await obj._init();
+		obj._init && (await obj._init());
 
 		const origin = Symbol("origin");
 
@@ -17,7 +17,7 @@ export const create_service_factory = (cls) => {
 			error._origin = origin;
 		};
 
-		for (let key of Object.keys(obj)) {
+		for (const key of Object.keys(obj)) {
 			if (key.startsWith("_")) {
 				continue;
 			}

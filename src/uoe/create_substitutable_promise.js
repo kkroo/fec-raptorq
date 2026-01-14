@@ -8,25 +8,27 @@ class SubstitutablePromise {
 	}
 
 	_exposed() {
-		let promise = Promise.resolve(this._promise);
+		const promise = Promise.resolve(this._promise);
 
-		return promise.then(result => {
-			if (this._promise !== promise) {
-				return this._exposed();
-			}
+		return promise
+			.then((result) => {
+				if (this._promise !== promise) {
+					return this._exposed();
+				}
 
-			this._is_settled = true;
+				this._is_settled = true;
 
-			return result;
-		}).catch(err => {
-			if (this._promise !== promise) {
-				return this._exposed();
-			}
+				return result;
+			})
+			.catch((err) => {
+				if (this._promise !== promise) {
+					return this._exposed();
+				}
 
-			this._is_settled = true;
+				this._is_settled = true;
 
-			return err;
-		});
+				return err;
+			});
 	}
 
 	exposed() {
@@ -44,13 +46,13 @@ class SubstitutablePromise {
 
 /**
  * @stability 2 - provisional
- * 
+ *
  * Creates a special promise that can be substituted with another promise.
- * 
+ *
  * The `exposed` method returns a promise that resolves to the currently substituted promise.
- * 
+ *
  * The `substitute` method takes in a new promise which is used for resolution, provided the `exposed` promise has not already resolved.
- * 
+ *
  * The `is_settled` method indicates whether the promise has been settled.
  */
 export const create_substitutable_promise = (initial_promise) => new SubstitutablePromise(initial_promise);

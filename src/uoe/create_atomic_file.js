@@ -41,11 +41,11 @@ class AtomicFile {
 	}
 
 	async write(payload) {
-		if (!payload instanceof Uint8Array) {
+		if (!(payload instanceof Uint8Array)) {
 			throw_error(error_user_payload("Provided payload must be Uint8Array."));
 		}
 
-		if (payload.length >= Math.pow(2, 32)) {
+		if (payload.length >= 2 ** 32) {
 			throw_error(error_user_payload("Length of provided payload must fit in 32 bits."));
 		}
 
@@ -93,11 +93,11 @@ class AtomicFile {
 
 /**
  * Creates a custom file with atomic write semantics and reed-solomon coding.
- * 
+ *
  * It is undefined behaviour if more than one instance of an underlying file is live at a time.
- * 
+ *
  * Three POSIX files are used internally (`a.dat`, `b.dat`, and `t.dat`).
- * 
+ *
  * This implementation favours reliability and durability over performance. If you perform more than 50 writes per second within a system that has competing work to do, you should assess the performance degradation. It might be appropriate to use a write-ahead log alongside an atomic file to improve performance and minimize atomic writes.
  */
 export const create_atomic_file = create_unsuspended_factory(AtomicFile);

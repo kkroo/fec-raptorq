@@ -2,9 +2,9 @@ import { enm } from "./enm.js";
 
 /**
  * Normalizes an enum such that a bare string is converted to an enum using that string as the symbol.
- * 
+ *
  * @example
- * 
+ *
  * // The following three lines of code are equivalent:
  * normalize_enum(enm.foo);
  * normalize_enum(enm["foo"]);

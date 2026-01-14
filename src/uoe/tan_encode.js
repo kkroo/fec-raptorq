@@ -11,11 +11,7 @@ const prefix = (string, pref) => {
 		.join("\n");
 };
 
-const is_dangerous = (entry) => (false
-	|| entry === ""
-	|| entry.includes("\n")
-	|| entry.startsWith(">")
-);
+const is_dangerous = (entry) => false || entry === "" || entry.includes("\n") || entry.startsWith(">");
 
 const encode_raw_entry = (entry) => {
 	let output = "";
@@ -24,12 +20,10 @@ const encode_raw_entry = (entry) => {
 	while (i < entry.length) {
 		const result = utf8_decode_maximally(entry.subarray(i));
 
-		if (false
-			|| result.num_valid_bytes >= 16
-			|| (true
-				&& result.num_valid_bytes > 0
-				&& i + result.num_valid_bytes === entry.length
-			)
+		if (
+			false ||
+			result.num_valid_bytes >= 16 ||
+			(true && result.num_valid_bytes > 0 && i + result.num_valid_bytes === entry.length)
 		) {
 			output += prefix(result.string, ">u ") + "\n";
 			i += result.num_valid_bytes;
@@ -42,16 +36,12 @@ const encode_raw_entry = (entry) => {
 				break;
 			}
 
-			if (false
-				|| j === 32
-				|| utf8_decode_maximally(entry.subarray(i + j)).num_valid_bytes >= 16
-			) {
+			if (false || j === 32 || utf8_decode_maximally(entry.subarray(i + j)).num_valid_bytes >= 16) {
 				output += ">x " + hex_encode(entry.subarray(i, i + j)) + "\n";
 				i += j;
 				break;
 			}
 		}
-
 	}
 
 	return output;
@@ -59,13 +49,13 @@ const encode_raw_entry = (entry) => {
 
 /**
  * @stabililty 1 - experimental
- * 
+ *
  * Encodes an (optionally nested) array of uint8arrays/strings into "Textual Array Notation" (TAN).
- * 
+ *
  * This is a UTF-8 encoding suitable for transfer through text-based mediums. The format can hold arbitrary binary data.
- * 
+ *
  * If a string is encountered, it is first encoded as UTF-8. TAN does not remember whether the original input was textual or binary data, so if a distinction must be made, you would need a custom way to indicate this fact.
- * 
+ *
  * All binary data is valid, including newlines and empty strings.
  */
 export const tan_encode = (entries, no_trailing) => {
@@ -74,7 +64,7 @@ export const tan_encode = (entries, no_trailing) => {
 	}
 
 	let output = "";
-	let prev_was = undefined;
+	let prev_was;
 
 	const mapped_entries = entries.map((entry) => {
 		if (typeof entry === "string") {

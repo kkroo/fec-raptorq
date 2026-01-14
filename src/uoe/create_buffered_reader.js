@@ -16,10 +16,7 @@ class BufferedReader {
 
 			const { value: chunk, done } = await this._stream.read();
 
-			if (true
-				&& chunk !== undefined
-				&& chunk.length > 0
-			) {
+			if (true && chunk !== undefined && chunk.length > 0) {
 				const new_buffer = new Uint8Array(this._buffer.length - this._offset + chunk.length);
 
 				new_buffer.set(this._buffer.slice(this._offset));

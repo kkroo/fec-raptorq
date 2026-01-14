@@ -3,14 +3,11 @@ import { throw_error } from "./throw_error.js";
 
 /**
  * @stability 2 - provisional
- * 
+ *
  * Aside - why does JavaScript not have an inbuilt function for this?
  */
 export const compare_bytes = (a, b) => {
-	if (false
-		|| !(a instanceof Uint8Array)
-		|| !(b instanceof Uint8Array)
-	) {
+	if (false || !(a instanceof Uint8Array) || !(b instanceof Uint8Array)) {
 		throw_error(error_user_payload("inputs must be uint8array"));
 	}
 

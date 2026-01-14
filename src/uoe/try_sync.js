@@ -9,6 +9,6 @@ export const try_sync = (func) => {
 	} catch (e) {
 		return enm.err(e);
 	}
-}
+};
 
 export const trySync = try_sync;

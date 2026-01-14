@@ -1,24 +1,15 @@
-import { throw_error } from "../uoe/throw_error.js";
 import { error_user_payload } from "../uoe/error_user_payload.js";
+import { throw_error } from "../uoe/throw_error.js";
 
 export const oti_encode = (oti_object) => {
 	// Individual validation
 
-	if (false
-		|| typeof oti_object !== "object"
-		|| oti_object === null
-	) {
+	if (false || typeof oti_object !== "object" || oti_object === null) {
 		throw_error(error_user_payload("Provided oti_object must be object."));
 	}
 
-	const {
-		transfer_length,
-		fec_encoding_id,
-		symbol_size,
-		num_source_blocks,
-		num_sub_blocks,
-		symbol_alignment,
-	} = oti_object;
+	const { transfer_length, fec_encoding_id, symbol_size, num_source_blocks, num_sub_blocks, symbol_alignment } =
+		oti_object;
 
 	if (typeof transfer_length !== "bigint") {
 		throw_error(error_user_payload("Provided transfer_length must be bigint."));
@@ -115,7 +106,9 @@ export const oti_encode = (oti_object) => {
 	// Inter-validation
 
 	if (symbol_size % symbol_alignment !== 0n) {
-		throw_error(error_user_payload(`symbol_size ${symbol_size} must be divisible by symbol_alignment ${symbol_alignment}.`));
+		throw_error(
+			error_user_payload(`symbol_size ${symbol_size} must be divisible by symbol_alignment ${symbol_alignment}.`),
+		);
 	}
 
 	// Transformation
@@ -123,25 +116,25 @@ export const oti_encode = (oti_object) => {
 	const oti_bytes = new Uint8Array(12);
 
 	// Transfer Length (F) - 40 bits
-	oti_bytes[0] = Number((transfer_length >> 32n) & 0xFFn);
-	oti_bytes[1] = Number((transfer_length >> 24n) & 0xFFn);
-	oti_bytes[2] = Number((transfer_length >> 16n) & 0xFFn);
-	oti_bytes[3] = Number((transfer_length >> 8n) & 0xFFn);
-	oti_bytes[4] = Number((transfer_length >> 0n) & 0xFFn);
+	oti_bytes[0] = Number((transfer_length >> 32n) & 0xffn);
+	oti_bytes[1] = Number((transfer_length >> 24n) & 0xffn);
+	oti_bytes[2] = Number((transfer_length >> 16n) & 0xffn);
+	oti_bytes[3] = Number((transfer_length >> 8n) & 0xffn);
+	oti_bytes[4] = Number((transfer_length >> 0n) & 0xffn);
 
 	// FEC Encoding ID - 8 bits
 	oti_bytes[5] = Number(fec_encoding_id);
 
 	// Symbol Size (T) - 16 bits
-	oti_bytes[6] = Number((symbol_size >> 8n) & 0xFFn);
-	oti_bytes[7] = Number((symbol_size >> 0n) & 0xFFn);
+	oti_bytes[6] = Number((symbol_size >> 8n) & 0xffn);
+	oti_bytes[7] = Number((symbol_size >> 0n) & 0xffn);
 
 	// Number of Source Blocks (Z) - 8 bits
 	oti_bytes[8] = Number(num_source_blocks);
 
 	// Number of Sub-Blocks (N) - 16 bits
-	oti_bytes[9] = Number((num_sub_blocks >> 8n) & 0xFFn);
-	oti_bytes[10] = Number((num_sub_blocks >> 0n) & 0xFFn);
+	oti_bytes[9] = Number((num_sub_blocks >> 8n) & 0xffn);
+	oti_bytes[10] = Number((num_sub_blocks >> 0n) & 0xffn);
 
 	// Symbol Alignment (Al) - 8 bits
 	oti_bytes[11] = Number(symbol_alignment);

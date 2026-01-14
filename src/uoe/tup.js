@@ -1,10 +1,11 @@
-import { map } from "./map.js";
-import { is_enum } from "./is_enum.js";
 import { enm } from "./enm.js";
+import { is_enum } from "./is_enum.js";
+import { map } from "./map.js";
 
 const create_tup = (positional_fields, named_fields) => {
 	const m = map((input) => {
-		if (input === undefined) { // TODO
+		if (input === undefined) {
+			// TODO
 			input = enm[0];
 		}
 
@@ -31,17 +32,17 @@ const create_tup = (positional_fields, named_fields) => {
 
 /**
  * Constructs a uoe tuple which is just a uoe map with both positional and named fields.
- * 
+ *
  * @example
- * 
+ *
  * sum_vectors(tup(1, 2), tup(3, 4));
- * 
+ *
  * @example
- * 
+ *
  * const person = tup("John", "Doe")({
  *   age: 30,
  * });
- * 
+ *
  * console.log(await person[0]());
  * console.log(await person[1]());
  * console.log(await person.age());

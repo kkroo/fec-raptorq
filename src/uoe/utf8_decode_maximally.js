@@ -11,9 +11,9 @@ const fatal_decoder = new TextDecoder("utf-8", {
 
 /**
  * @stability 1 - experimental
- * 
+ *
  * Decodes a Uint8Array containing UTF-8 data into a string until it hits an invalid byte sequence.
- * 
+ *
  * Returns an object containing the maximal valid `string` and corresponding `num_bytes` taken from the original input.
  */
 export const utf8_decode_maximally = (bytes) => {
@@ -29,15 +29,13 @@ export const utf8_decode_maximally = (bytes) => {
 
 		for (let i = 0; i < re_encoded.length; i++) {
 			if (bytes[i] === re_encoded[i]) {
-				if (true
-					&& i + 2 < re_encoded.length
-					&& re_encoded[i] === 0xEF
-					&& re_encoded[i + 1] === 0xBF
-					&& re_encoded[i + 2] === 0xBD
-					&& (false
-						|| bytes[i + 1] !== 0xBF
-						|| bytes[i + 2] !== 0xBD
-					)
+				if (
+					true &&
+					i + 2 < re_encoded.length &&
+					re_encoded[i] === 0xef &&
+					re_encoded[i + 1] === 0xbf &&
+					re_encoded[i + 2] === 0xbd &&
+					(false || bytes[i + 1] !== 0xbf || bytes[i + 2] !== 0xbd)
 				) {
 					return i;
 				}
@@ -46,7 +44,7 @@ export const utf8_decode_maximally = (bytes) => {
 			}
 
 			return i;
-		};
+		}
 	})();
 
 	return {

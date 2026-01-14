@@ -1,47 +1,40 @@
 /**
  * @stability 2 - provisional
- * 
+ *
  * Converts a uoe-error into a JavaScript error and throws it.
  */
+function createError(name, message, details) {
+	const err = new Error(message);
+	err.name = name;
+	err.details = details;
+	return err;
+}
+
 export const throw_error = (error) => {
 	if (error?.sym === "error") {
 		console.log("actually found error");
 		throw_error(error.data);
 	}
 
-	throw (() => {
-		if (error.type === "user") {
-			let err = new Error(
-				`
-type   ${error.type}
-class  ${error.class}
-${error.message}
-`);
-			err.name = "UserError";
-			err.details = error;
-			return err;
-		}
+	switch (error.type) {
+		case "user":
+			throw createError(
+				"UserError",
+				`\ntype   ${error.type}\nclass  ${error.class}\n${error.message}\n`,
+				error,
+			);
 
-		if (error.type === "state") {
-			let err = new Error(
-				`
-type   ${error.type}
-name   ${error.name}
-${error.message}
-`);
-			err.name = "StateError";
-			err.details = error;
-			return err;
-		}
-		if (error.type === "internal") {
-			let err = new Error(
-				`
-type   ${error.type}
-${error.message}
-`);
-			err.name = "InternalError";
-			err.details = error;
-			return err;
-		}
-	})();
+		case "state":
+			throw createError(
+				"StateError",
+				`\ntype   ${error.type}\nname   ${error.name}\n${error.message}\n`,
+				error,
+			);
+
+		case "internal":
+			throw createError("InternalError", `\ntype   ${error.type}\n${error.message}\n`, error);
+
+		default:
+			throw new Error(`Unknown error type: ${error.type}`);
+	}
 };

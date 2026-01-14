@@ -543,7 +543,7 @@
         }
         
         // Run all tests
-        window.runAllTests = async function() {
+        window.runAllTests = async () => {
             document.getElementById('run-tests-btn').disabled = true;
             document.getElementById('test-status').textContent = 'Running';
             document.getElementById('test-status').className = 'status-badge warning';
@@ -611,4 +611,9 @@
     </script>
 </body>
 </html>
+
+
+
+
+
 

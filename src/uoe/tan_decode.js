@@ -10,7 +10,7 @@ const unprefix = (lines, num_chars) => {
 
 const decode_raw_entry = (lines) => {
 	let bytes = new Uint8Array(0);
-	let prev_was = undefined;
+	let prev_was;
 
 	for (const line of lines) {
 		const remains = line.substring(3);
@@ -48,39 +48,28 @@ export const _tan_decode = (lines) => {
 		} else if (line.startsWith(">> ")) {
 			const nested_lines = [];
 
-			for (var j = i; (true
-				&& j < lines.length
-				&& lines[j].startsWith(">> ")
-			); j++) {
+			for (var j = i; true && j < lines.length && lines[j].startsWith(">> "); j++) {
 				nested_lines.push(lines[j]);
 			}
 
 			entries.push(_tan_decode(unprefix(nested_lines, 3)));
 
 			i = j;
-		} else if (false
-			|| line.startsWith(">u ")
-			|| line.startsWith(">x ")
-		) {
+		} else if (false || line.startsWith(">u ") || line.startsWith(">x ")) {
 			const nested_lines = [];
 
-			for (let j = i; (true
-				&& j < lines.length
-				&& (false
-					|| lines[j].startsWith(">u ")
-					|| lines[j].startsWith(">x ")
-				)
-			); j++) {
+			for (
+				let j = i;
+				true && j < lines.length && (false || lines[j].startsWith(">u ") || lines[j].startsWith(">x "));
+				j++
+			) {
 				nested_lines.push(lines[j]);
 				entries.push(decode_raw_entry(nested_lines));
 			}
 		} else if (line.startsWith("> ")) {
 			const nested_lines = [];
 
-			for (var j = i; (true
-				&& j < lines.length
-				&& lines[j].startsWith("> ")
-			); j++) {
+			for (var j = i; true && j < lines.length && lines[j].startsWith("> "); j++) {
 				nested_lines.push(lines[j]);
 			}
 
