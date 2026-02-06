@@ -161,12 +161,29 @@ impl InterleavedEncoder {
     /// Ok(block_id) - The block ID where the packet was added
     /// Err(error) - Error code if operation failed
     pub fn add_packet(&mut self, data: &[u8]) -> Result<u32, RaptorQError> {
+        self.add_packet_ex(data).map(|(block_id, _)| block_id)
+    }
+
+    /// Add a source packet to the encoder (extended version)
+    ///
+    /// Packets are distributed round-robin across interleaved blocks.
+    ///
+    /// # Arguments
+    /// * `data` - Source packet data
+    ///
+    /// # Returns
+    /// Ok((block_id, symbol_id)) - The block ID and symbol index where the packet was added
+    /// Err(error) - Error code if operation failed
+    pub fn add_packet_ex(&mut self, data: &[u8]) -> Result<(u32, u32), RaptorQError> {
         if data.len() > self.symbol_size as usize {
             return Err(RaptorQError::RaptorqErrorInvalidParam);
         }
 
         let block_idx = self.current_block;
         let block = &mut self.blocks[block_idx];
+
+        // Symbol ID is the current packet count (0-indexed within block)
+        let symbol_id = block.packet_count;
 
         // Pad data to symbol size if needed
         block.data.extend_from_slice(data);
@@ -197,7 +214,7 @@ impl InterleavedEncoder {
         // Move to next block in round-robin
         self.current_block = (self.current_block + 1) % self.depth;
 
-        Ok(block_id)
+        Ok((block_id, symbol_id))
     }
 
     /// Get the status of a specific block
@@ -618,6 +635,7 @@ pub extern "C" fn raptorq_interleaved_encoder_free(encoder: *mut RaptorQInterlea
 }
 
 /// Add source packet to encoder
+/// Returns block_id and symbol_id (index within block) via output parameters
 #[no_mangle]
 pub extern "C" fn raptorq_interleaved_encoder_add_packet(
     encoder: *mut RaptorQInterleavedEncoderC,
@@ -636,6 +654,36 @@ pub extern "C" fn raptorq_interleaved_encoder_add_packet(
         Ok(bid) => {
             unsafe {
                 *block_id = bid;
+            }
+            // Return block index (0 to depth-1)
+            (bid as usize % encoder.depth()) as i32
+        }
+        Err(e) => e as i32,
+    }
+}
+
+/// Add source packet to encoder with symbol_id output
+/// This version also returns the symbol_id (packet index within the block)
+#[no_mangle]
+pub extern "C" fn raptorq_interleaved_encoder_add_packet_ex(
+    encoder: *mut RaptorQInterleavedEncoderC,
+    packet_data: *const u8,
+    packet_len: usize,
+    block_id: *mut u32,
+    symbol_id: *mut u32,
+) -> i32 {
+    if encoder.is_null() || packet_data.is_null() || block_id.is_null() || symbol_id.is_null() {
+        return RaptorQError::RaptorqErrorInvalidParam as i32;
+    }
+
+    let encoder = unsafe { &mut (*encoder).encoder };
+    let data = unsafe { slice::from_raw_parts(packet_data, packet_len) };
+
+    match encoder.add_packet_ex(data) {
+        Ok((bid, sid)) => {
+            unsafe {
+                *block_id = bid;
+                *symbol_id = sid;
             }
             // Return block index (0 to depth-1)
             (bid as usize % encoder.depth()) as i32

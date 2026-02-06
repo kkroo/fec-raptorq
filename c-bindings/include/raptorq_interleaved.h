@@ -114,6 +114,29 @@ int32_t raptorq_interleaved_encoder_add_packet(
 );
 
 /**
+ * Add source packet to encoder with symbol_id output (extended version)
+ *
+ * Same as raptorq_interleaved_encoder_add_packet but also returns the symbol_id
+ * (packet index within the block). Use this when you need to construct the
+ * Source FEC Payload ID (block_id + symbol_id) for the MMTP packet.
+ *
+ * @param encoder       Encoder handle
+ * @param packet_data   Source packet data (MMTP packet without FEC Payload ID)
+ * @param packet_len    Packet length
+ * @param block_id      [OUT] Block ID where packet was added
+ * @param symbol_id     [OUT] Symbol ID (0 to k-1) within the block
+ *
+ * @return Block index (0 to depth-1) where packet was added, or negative error code
+ */
+int32_t raptorq_interleaved_encoder_add_packet_ex(
+    RaptorQInterleavedEncoderC* encoder,
+    const uint8_t* packet_data,
+    size_t packet_len,
+    uint32_t* block_id,
+    uint32_t* symbol_id
+);
+
+/**
  * Get status of a specific block
  *
  * @param encoder       Encoder handle
