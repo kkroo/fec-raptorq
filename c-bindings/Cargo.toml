@@ -21,7 +21,7 @@ harness = false
 
 [profile.release]
 opt-level = 3
-lto = true
+lto = false
 
 [profile.bench]
 opt-level = 3
