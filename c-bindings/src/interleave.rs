@@ -277,6 +277,49 @@ impl InterleavedEncoder {
         Ok(result)
     }
 
+    /// Force-complete a block that has fewer than K packets.
+    /// Pads the block's data to K * symbol_size with zeros and creates the encoder.
+    /// Used for object-level FEC where each frame is its own block with variable K.
+    ///
+    /// Returns the actual packet count (the real K for this block).
+    pub fn force_complete(&mut self, block_index: usize) -> Result<u32, RaptorQError> {
+        if block_index >= self.depth {
+            return Err(RaptorQError::RaptorqErrorInvalidParam);
+        }
+
+        let block = &mut self.blocks[block_index];
+
+        if block.packet_count == 0 {
+            return Err(RaptorQError::RaptorqErrorInvalidParam);
+        }
+
+        // Already complete
+        if block.packet_count == self.k && block.encoder.is_some() {
+            return Ok(block.packet_count);
+        }
+
+        let actual_k = block.packet_count;
+
+        // Pad data to full K * symbol_size (RaptorQ needs fixed block size)
+        let target_size = self.k as usize * self.symbol_size as usize;
+        if block.data.len() < target_size {
+            block.data.resize(target_size, 0);
+        }
+        // Set packet_count to K so generate_repair() accepts it
+        block.packet_count = self.k;
+
+        // Create the encoder
+        let encoder = SourceBlockEncoder::with_encoding_plan(
+            0,
+            &self.config,
+            &block.data,
+            &self.shared_encoding_plan,
+        );
+        block.encoder = Some(encoder);
+
+        Ok(actual_k)
+    }
+
     /// Get source packets for a ready block
     ///
     /// # Arguments
@@ -767,6 +810,31 @@ pub extern "C" fn raptorq_interleaved_encoder_get_oti(
     }
 
     RaptorQError::RaptorqOk as i32
+}
+
+/// Force-complete a block with fewer than K packets (object-level FEC).
+/// Pads to K symbols and makes the block ready for generate_repair().
+/// Returns actual packet count via out_actual_k, or negative error.
+#[no_mangle]
+pub extern "C" fn raptorq_interleaved_encoder_force_complete(
+    encoder: *mut RaptorQInterleavedEncoderC,
+    block_index: u32,
+    out_actual_k: *mut u32,
+) -> i32 {
+    if encoder.is_null() {
+        return RaptorQError::RaptorqErrorInvalidParam as i32;
+    }
+
+    let encoder = unsafe { &mut (*encoder).encoder };
+    match encoder.force_complete(block_index as usize) {
+        Ok(actual_k) => {
+            if !out_actual_k.is_null() {
+                unsafe { *out_actual_k = actual_k; }
+            }
+            RaptorQError::RaptorqOk as i32
+        }
+        Err(e) => e as i32,
+    }
 }
 
 // ============================================================================

@@ -193,6 +193,24 @@ RaptorQError raptorq_interleaved_encoder_get_oti(
     RaptorQOTI* oti
 );
 
+/**
+ * Force-complete a block with fewer than K packets (object-level FEC).
+ *
+ * Pads the block data to K * symbol_size with zeros and marks it ready
+ * for generate_repair(). Used when each frame is its own FEC block.
+ *
+ * @param encoder       Encoder handle
+ * @param block_index   Block index (0 to depth-1)
+ * @param out_actual_k  [OUT] Actual packet count before padding (may be NULL)
+ *
+ * @return RAPTORQ_OK on success, error code on failure
+ */
+RaptorQError raptorq_interleaved_encoder_force_complete(
+    RaptorQInterleavedEncoderC* encoder,
+    uint32_t block_index,
+    uint32_t* out_actual_k
+);
+
 /* ============================================================================
  * Decoder API
  * ============================================================================ */
