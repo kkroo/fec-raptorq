@@ -101,7 +101,7 @@ impl InterleavedEncoder {
     /// Create a new interleaved encoder
     ///
     /// # Arguments
-    /// * `depth` - Interleave depth (1-8). Higher = lower latency
+    /// * `depth` - Interleave depth (1-64). Higher = longer burst protection
     /// * `k` - Source symbols per block
     /// * `symbol_size` - Symbol size in bytes
     /// * `repair_symbols` - Number of repair symbols per block
@@ -829,7 +829,9 @@ pub extern "C" fn raptorq_interleaved_encoder_force_complete(
     match encoder.force_complete(block_index as usize) {
         Ok(actual_k) => {
             if !out_actual_k.is_null() {
-                unsafe { *out_actual_k = actual_k; }
+                unsafe {
+                    *out_actual_k = actual_k;
+                }
             }
             RaptorQError::RaptorqOk as i32
         }
@@ -990,7 +992,7 @@ mod tests {
     #[test]
     fn test_encoder_invalid_params() {
         assert!(InterleavedEncoder::new(0, 8, 1200, 4).is_none());
-        assert!(InterleavedEncoder::new(9, 8, 1200, 4).is_none());
+        assert!(InterleavedEncoder::new(65, 8, 1200, 4).is_none());
         assert!(InterleavedEncoder::new(4, 0, 1200, 4).is_none());
         assert!(InterleavedEncoder::new(4, 8, 0, 4).is_none());
     }
